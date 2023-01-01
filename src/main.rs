@@ -2,7 +2,6 @@ mod map;
 mod map_generator;
 mod movement;
 mod player;
-mod input;
 
 use bevy::{prelude::*, time::FixedTimestep, diagnostic::{LogDiagnosticsPlugin, FrameTimeDiagnosticsPlugin}};
 use bevy_ecs_tilemap::prelude::*;
@@ -10,8 +9,12 @@ use movement::{move_entities, player_input_system};
 
 const TIME_STEP: f32 = 1.0 / 60.0;
 
+const SCREEN_WIDTH: u32 = 1280;
+const SCREEN_HEIGHT: u32 = 720;
+
 fn startup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle::default());
+    commands.spawn(Camera2dBundle {transform:Transform::from_xyz((SCREEN_WIDTH / 2) as f32 - 8.0, (SCREEN_HEIGHT / 2) as f32 - 8.0, 999.9),..default()});
+
 }
 
 struct SetupPlugin;

@@ -31,11 +31,11 @@ pub fn move_entities(mut query: Query<(&mut Movement, &mut Transform)>) {
         match movement.direction {
             Direction::Up => {
                 transform.translation += Vec3::Y * 16.0;
-                movement.position.y -= 1;
+                movement.position.y += 1;
             }
             Direction::Down => {
                 transform.translation -= Vec3::Y * 16.0;
-                movement.position.y += 1;
+                movement.position.y -= 1;
             }
             Direction::Left => {
                 transform.translation -= Vec3::X * 16.0;
@@ -64,14 +64,14 @@ pub fn check_collisions(
         let mut y = movement.position.y;
 
         match movement.direction {
-            Direction::Up => y -= 1,
-            Direction::Down => y += 1,
+            Direction::Up => y += 1,
+            Direction::Down => y -= 1,
             Direction::Left => x -= 1,
             Direction::Right => x += 1,
             _ => {}
         }
 
-        if let Some(entity) = tile_map.get(&TilePos::new(x, 15 - y)) {
+        if let Some(entity) = tile_map.get(&TilePos::new(x, y)) {
             if let Ok(tile_type) = tile_type_query.get_component::<TileType>(entity) {
                 if *tile_type == TileType::Wall {
                     movement.direction = Direction::None;
