@@ -14,12 +14,18 @@ pub fn add_player(mut commands: Commands) {
         movement::Controllable,
         movement::Movement {
             direction: movement::Direction::None,
-            position: movement::Position { x: player_x, y: player_y },
+            position: movement::Position {
+                x: player_x,
+                y: player_y,
+            },
         },
         SpriteBundle {
             sprite: Sprite {
                 color: Color::rgb(0.1, 1.0, 1.0),
-                custom_size: Some(Vec2::new((player_x as f32) * 16.0, (player_y as f32) * 16.0)),
+                custom_size: Some(Vec2::new(
+                    (player_x as f32) * 16.0,
+                    (player_y as f32) * 16.0,
+                )),
                 ..default()
             },
             transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, 0.0))

@@ -1,5 +1,5 @@
 use bevy::prelude::*;
-use rand::{Rng, rngs::ThreadRng};
+use rand::{rngs::ThreadRng, Rng};
 
 #[derive(Clone, Copy)]
 pub struct Room {
@@ -13,7 +13,9 @@ impl Room {
     }
 }
 
-pub struct MapGenerator { rng: ThreadRng }
+pub struct MapGenerator {
+    rng: ThreadRng,
+}
 
 #[derive(Component, Clone, PartialEq, Copy)]
 pub enum TileType {
@@ -23,7 +25,7 @@ pub enum TileType {
 }
 
 pub struct TileMap {
-    tile_map: Vec<Vec<TileType>>
+    tile_map: Vec<Vec<TileType>>,
 }
 
 impl TileMap {
@@ -55,31 +57,35 @@ enum Direction {
     Up,
     Down,
     Left,
-    Right
+    Right,
 }
 
 impl MapGenerator {
     pub fn new() -> MapGenerator {
-        MapGenerator { rng: rand::thread_rng() }
+        MapGenerator {
+            rng: rand::thread_rng(),
+        }
     }
 
     pub fn generate_random(&mut self) -> DungeonMap {
-
-
         let starting_room = self.generate_room();
-        let starting_room_pos = Vec2::new(self.rng.gen_range(4..16) as f32, self.rng.gen_range(4..16) as f32);
+        let starting_room_pos = Vec2::new(
+            self.rng.gen_range(4..16) as f32,
+            self.rng.gen_range(4..16) as f32,
+        );
         let direction = self.choose_direction();
         let corridor = self.generate_corridor(direction);
         let corridor_pos = starting_room_pos + self.place_corridor(starting_room, direction);
-        
 
-        let rooms = vec![
-            (starting_room, starting_room_pos), 
-        ];
-        
+        let rooms = vec![(starting_room, starting_room_pos)];
+
         let corridors: Vec<(Corridor, Vec2)> = vec![(corridor, corridor_pos)];
 
-        DungeonMap { rooms, corridors, map_size: (80, 45) }
+        DungeonMap {
+            rooms,
+            corridors,
+            map_size: (80, 45),
+        }
     }
 
     fn generate_room(&mut self) -> Room {
@@ -94,7 +100,7 @@ impl MapGenerator {
             1 => Direction::Down,
             2 => Direction::Left,
             3 => Direction::Right,
-            _ => Direction::Up
+            _ => Direction::Up,
         }
     }
 
@@ -103,7 +109,7 @@ impl MapGenerator {
             Direction::Up => Vec2::Y,
             Direction::Down => Vec2::NEG_Y,
             Direction::Right => Vec2::X,
-            Direction::Left => Vec2::NEG_X
+            Direction::Left => Vec2::NEG_X,
         };
 
         let length1 = self.rng.gen_range(2..10) as f32;
@@ -123,7 +129,7 @@ impl MapGenerator {
             Direction::Up => (self.rng.gen_range(0..width), (height - 1)),
             Direction::Down => (self.rng.gen_range(0..width), 0),
             Direction::Right => (width - 1, self.rng.gen_range(0..height)),
-            Direction::Left => (0, self.rng.gen_range(0..height))
+            Direction::Left => (0, self.rng.gen_range(0..height)),
         };
 
         Vec2::new(x as f32, y as f32)
@@ -133,11 +139,11 @@ impl MapGenerator {
 pub struct DungeonMap {
     pub rooms: Vec<(Room, Vec2)>,
     pub corridors: Vec<(Corridor, Vec2)>,
-    pub map_size: (u32, u32)
+    pub map_size: (u32, u32),
 }
 
 pub struct Corridor {
-    pub shape: (Vec2, Vec2)
+    pub shape: (Vec2, Vec2),
 }
 
 impl DungeonMap {
@@ -157,15 +163,22 @@ impl DungeonMap {
         let mut tile_map = TileMap::new(grid);
 
         for (room, pos) in &self.rooms {
-            for y in 0..room.height {                
+            for y in 0..room.height {
                 for x in 0..room.width {
-
                     let on_border = y == 0 || y == room.height - 1 || x == 0 || x == room.width - 1;
 
                     if on_border {
-                        tile_map.set((x as f32 + pos.x) as u32, (y as f32 + pos.y) as u32, TileType::Wall);
+                        tile_map.set(
+                            (x as f32 + pos.x) as u32,
+                            (y as f32 + pos.y) as u32,
+                            TileType::Wall,
+                        );
                     } else {
-                        tile_map.set((x as f32 + pos.x) as u32, (y as f32 + pos.y) as u32, TileType::Floor);
+                        tile_map.set(
+                            (x as f32 + pos.x) as u32,
+                            (y as f32 + pos.y) as u32,
+                            TileType::Floor,
+                        );
                     }
                 }
             }

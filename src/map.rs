@@ -10,7 +10,10 @@ pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     let dungeon_map = generator.generate_random();
 
-    let map_size = TilemapSize { x: dungeon_map.map_size.0, y: dungeon_map.map_size.1 };
+    let map_size = TilemapSize {
+        x: dungeon_map.map_size.0,
+        y: dungeon_map.map_size.1,
+    };
 
     let tilemap_entity = commands.spawn_empty().id();
 
