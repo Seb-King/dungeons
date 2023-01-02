@@ -1,12 +1,14 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::map_generator::{MapGenerator, TileType, Access, Grid};
+use crate::map_generator::{MapGenerator, TileType};
 
 pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let texture_handle: Handle<Image> = asset_server.load("dungeon-tiles.png");
 
-    let dungeon_map = MapGenerator::generate_random();
+    let mut generator = MapGenerator::new();
+
+    let dungeon_map = generator.generate_random();
 
     let map_size = TilemapSize { x: dungeon_map.map_size.0, y: dungeon_map.map_size.1 };
 
