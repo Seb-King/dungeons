@@ -1,7 +1,19 @@
-use bevy::prelude::*;
+use bevy::{prelude::*, utils::HashSet};
 use bevy_ecs_tilemap::prelude::*;
 
 use crate::map_generator::{MapGenerator, TileType};
+
+const CHUNK_SIZE: UVec2 = UVec2 { x: 4, y: 4 };
+
+const RENDER_CHUNK_SIZE: UVec2 = UVec2 {
+    x: CHUNK_SIZE.x * 2,
+    y: CHUNK_SIZE.y * 2,
+};
+
+#[derive(Default, Debug, Resource)]
+struct ChunkManager {
+    pub spawned_chunks: HashSet<IVec2>,
+}
 
 pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
     let texture_handle: Handle<Image> = asset_server.load("dungeon-tiles.png");

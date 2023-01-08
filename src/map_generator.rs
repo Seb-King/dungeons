@@ -173,8 +173,8 @@ impl DungeonMap {
             let mut s = Vec2::ZERO;
 
             for i in 0..first_hall_length {
-                let x: u32 = (x_offset as u32) + i * (first_hall_dir.x as u32);
-                let y: u32 = (y_offset as u32) + i * (first_hall_dir.y as u32);
+                let x: i32 = (x_offset as i32) + (i as i32) * (first_hall_dir.x as i32);
+                let y: i32 = (y_offset as i32) + (i as i32) * (first_hall_dir.y as i32);
                 tile_map.set(IVec2::new(x as i32, y as i32), TileType::Floor);
 
                 s = Vec2::new(x as f32, y as f32);
@@ -182,9 +182,9 @@ impl DungeonMap {
 
             let second_hall_dir = corridor.shape.1.normalize_or_zero();
             for i in 0..second_hall_length {
-                let x: u32 = (s.x) as u32 + (i + 1) * (second_hall_dir.x as u32);
-                let y: u32 = (s.y) as u32 + (i + 1) * (second_hall_dir.y as u32);
-                tile_map.set(IVec2::new(x as i32, y as i32), TileType::Floor);
+                let x: i32 = (s.x) as i32 + ((i + 1) as i32) * (second_hall_dir.x as i32);
+                let y: i32 = (s.y) as i32 + ((i + 1) as i32) * (second_hall_dir.y as i32);
+                tile_map.set(IVec2::new(x, y), TileType::Floor);
             }
         }
         return tile_map;
