@@ -23,7 +23,8 @@ pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
 
     for x in 0..map_size.x {
         for y in 0..map_size.y {
-            let tile_type: TileType = tile_map.get(x, y);
+            let pos = IVec2::new(x as i32, y as i32);
+            let tile_type: TileType = tile_map.get(pos);
 
             let index = get_tile_index(tile_type);
 

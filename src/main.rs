@@ -53,8 +53,8 @@ fn main() {
                         .after(player_input_system)
                         .before(move_entities),
                 )
-                .with_system(movement::move_entities)
-                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64)),
+                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
+                .with_system(movement::move_entities),
         )
         .run();
 }
