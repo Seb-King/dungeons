@@ -69,6 +69,8 @@ pub fn spawn_map(mut commands: Commands, asset_server: Res<AssetServer>) {
         tile_size,
         ..Default::default()
     });
+
+    commands.insert_resource(dungeon_map.get_tile_map());
 }
 
 fn get_tile_index(tile_type: TileType) -> u32 {

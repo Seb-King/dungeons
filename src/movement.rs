@@ -1,7 +1,7 @@
 use bevy::prelude::*;
 use bevy_ecs_tilemap::tiles::{TilePos, TileStorage};
 
-use crate::map_generator::TileType;
+use crate::map_generator::{TileMap, TileType};
 
 #[derive(Component)]
 pub struct Movement {
@@ -52,13 +52,7 @@ pub fn move_entities(mut query: Query<(&mut Movement, &mut Transform)>) {
     }
 }
 
-pub fn check_collisions(
-    mut movement_query: Query<&mut Movement>,
-    tile_map_query: Query<&TileStorage>,
-    tile_type_query: Query<&TileType>,
-) {
-    let tile_map = tile_map_query.single();
-
+pub fn check_collisions(mut movement_query: Query<&mut Movement>, world_map: Res<TileMap>) {
     for mut movement in &mut movement_query {
         let mut x = movement.position.x;
         let mut y = movement.position.y;
@@ -71,12 +65,10 @@ pub fn check_collisions(
             _ => {}
         }
 
-        if let Some(entity) = tile_map.get(&TilePos::new(x, y)) {
-            if let Ok(tile_type) = tile_type_query.get_component::<TileType>(entity) {
-                if *tile_type == TileType::Wall {
-                    movement.direction = Direction::None;
-                }
-            }
+        let tile_type = world_map.get(IVec2::new(x as i32, y as i32));
+
+        if tile_type == TileType::Wall {
+            movement.direction = Direction::None;
         }
     }
 }

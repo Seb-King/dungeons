@@ -24,6 +24,7 @@ pub enum TileType {
     Wall,
 }
 
+#[derive(Resource, Default)]
 pub struct TileMap {
     tile_map: HashMap<IVec2, TileType>,
 }
