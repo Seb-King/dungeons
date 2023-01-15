@@ -108,12 +108,27 @@ impl MapGenerator {
             Direction::Left => Vec2::NEG_X,
         };
 
+        let second_hall_vec = match direction {
+            Direction::Up => Vec2::X,
+            Direction::Down => Vec2::X,
+            Direction::Right => Vec2::Y,
+            Direction::Left => Vec2::Y,
+        };
+
         let length1 = self.rng.gen_range(2..10) as f32;
 
-        let f = Vec2::new(first_hall_vec.x * length1, first_hall_vec.y * length1);
+        let sign = if self.rng.gen_bool(0.5) { 1 } else { -1 };
+        let turn_length = (self.rng.gen_range(2..10) * sign) as f32;
+
+        let first = Vec2::new(first_hall_vec.x * length1, first_hall_vec.y * length1);
+
+        let second = Vec2::new(
+            second_hall_vec.x * turn_length,
+            second_hall_vec.y * turn_length,
+        );
 
         Corridor {
-            shape: (f, Vec2::new(0.0, 0.0)),
+            shape: (first, second),
         }
     }
 
@@ -122,10 +137,10 @@ impl MapGenerator {
         let height = room.height - 1;
 
         let (x, y) = match direction {
-            Direction::Up => (self.rng.gen_range(0..width), (height - 1)),
-            Direction::Down => (self.rng.gen_range(0..width), 0),
-            Direction::Right => (width - 1, self.rng.gen_range(0..height)),
-            Direction::Left => (0, self.rng.gen_range(0..height)),
+            Direction::Up => (self.rng.gen_range(1..width), (height - 1)),
+            Direction::Down => (self.rng.gen_range(1..width), 0),
+            Direction::Right => (width - 1, self.rng.gen_range(1..height)),
+            Direction::Left => (0, self.rng.gen_range(1..height)),
         };
 
         Vec2::new(x as f32, y as f32)
@@ -163,28 +178,28 @@ impl DungeonMap {
         }
 
         for (corridor, starting_pos) in &self.corridors {
-            let x_offset = starting_pos.x;
-            let y_offset = starting_pos.y;
+            let x_offset = starting_pos.x as i32;
+            let y_offset = starting_pos.y as i32;
 
             let first_hall_length = corridor.shape.0.length() as u32;
             let second_hall_length = corridor.shape.1.length() as u32;
 
             let first_hall_dir = corridor.shape.0.normalize_or_zero();
 
-            let mut s = Vec2::ZERO;
+            let mut s = IVec2::ZERO;
 
             for i in 0..first_hall_length {
-                let x: i32 = (x_offset as i32) + (i as i32) * (first_hall_dir.x as i32);
-                let y: i32 = (y_offset as i32) + (i as i32) * (first_hall_dir.y as i32);
-                tile_map.set(IVec2::new(x as i32, y as i32), TileType::Floor);
+                let x: i32 = x_offset + (i as i32) * (first_hall_dir.x as i32);
+                let y: i32 = y_offset + (i as i32) * (first_hall_dir.y as i32);
+                tile_map.set(IVec2::new(x, y), TileType::Floor);
 
-                s = Vec2::new(x as f32, y as f32);
+                s = IVec2::new(x, y);
             }
 
             let second_hall_dir = corridor.shape.1.normalize_or_zero();
             for i in 0..second_hall_length {
-                let x: i32 = (s.x) as i32 + ((i + 1) as i32) * (second_hall_dir.x as i32);
-                let y: i32 = (s.y) as i32 + ((i + 1) as i32) * (second_hall_dir.y as i32);
+                let x: i32 = s.x + ((i + 1) as i32) * (second_hall_dir.x as i32);
+                let y: i32 = s.y + ((i + 1) as i32) * (second_hall_dir.y as i32);
                 tile_map.set(IVec2::new(x, y), TileType::Floor);
             }
         }
