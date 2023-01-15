@@ -17,7 +17,7 @@ pub struct MapGenerator {
     rng: ThreadRng,
 }
 
-#[derive(Component, Clone, PartialEq, Copy)]
+#[derive(Component, Clone, PartialEq, Copy, Debug)]
 pub enum TileType {
     Void,
     Floor,

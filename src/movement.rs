@@ -1,5 +1,4 @@
 use bevy::prelude::*;
-use bevy_ecs_tilemap::tiles::{TilePos, TileStorage};
 
 use crate::map_generator::{TileMap, TileType};
 
@@ -11,8 +10,8 @@ pub struct Movement {
 
 #[derive(Component)]
 pub struct Position {
-    pub x: u32,
-    pub y: u32,
+    pub x: i32,
+    pub y: i32,
 }
 
 #[derive(Component)]

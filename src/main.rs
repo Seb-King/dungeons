@@ -9,6 +9,7 @@ use bevy::{
     time::FixedTimestep,
 };
 use bevy_ecs_tilemap::prelude::*;
+use map::ChunkManager;
 use movement::{move_entities, player_input_system};
 
 const TIME_STEP: f32 = 1.0 / 60.0;
@@ -46,6 +47,7 @@ fn main() {
         .add_startup_system(map::spawn_map)
         .add_startup_system(player::add_player)
         .add_system(player_input_system)
+        .insert_resource(ChunkManager::default())
         .add_system_set(
             SystemSet::new()
                 .with_system(
