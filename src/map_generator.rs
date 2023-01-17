@@ -137,9 +137,9 @@ impl MapGenerator {
         let height = room.height - 1;
 
         let (x, y) = match direction {
-            Direction::Up => (self.rng.gen_range(1..width), (height - 1)),
+            Direction::Up => (self.rng.gen_range(1..width), height),
             Direction::Down => (self.rng.gen_range(1..width), 0),
-            Direction::Right => (width - 1, self.rng.gen_range(1..height)),
+            Direction::Right => (width, self.rng.gen_range(1..height)),
             Direction::Left => (0, self.rng.gen_range(1..height)),
         };
 
@@ -153,6 +153,7 @@ pub struct DungeonMap {
     pub map_size: (u32, u32),
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Corridor {
     pub shape: (Vec2, Vec2),
 }

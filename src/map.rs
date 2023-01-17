@@ -1,13 +1,76 @@
-use bevy::{prelude::*, utils::HashSet};
+use bevy::{ecs::schedule::ShouldRun, prelude::*, utils::HashSet};
 use bevy_ecs_tilemap::prelude::*;
 
 use crate::map_generator::{MapGenerator, TileMap, TileType};
 
-const CHUNK_SIZE: UVec2 = UVec2 { x: 4, y: 4 };
+const CHUNK_SIZE: UVec2 = UVec2 { x: 8, y: 8 };
 
 #[derive(Default, Debug, Resource)]
 pub struct ChunkManager {
     pub spawned_chunks: HashSet<IVec2>,
+}
+
+#[derive(Component, Debug)]
+pub struct MapSpawner {
+    pub respawn_map: bool,
+}
+
+pub fn respawn_map_input_system(
+    mut keyboard_input: ResMut<Input<KeyCode>>,
+    mut query: Query<&mut MapSpawner>,
+) {
+    let mut spawner = query.single_mut();
+
+    if keyboard_input.clear_just_pressed(KeyCode::Space) {
+        spawner.respawn_map = true;
+    }
+}
+
+pub fn despawn_map(
+    mut spawner_query: Query<&mut MapSpawner>,
+    chunks_query: Query<Entity, With<TilemapId>>,
+    tilemap_query: Query<Entity, With<TileStorage>>,
+    mut chunk_manager: ResMut<ChunkManager>,
+    mut commands: Commands,
+) {
+    let mut map_spawner = spawner_query.single_mut();
+
+    despawn_all_chunks(chunks_query, tilemap_query, chunk_manager, commands);
+    map_spawner.respawn_map = false;
+}
+
+pub fn despawn_all_chunks(
+    chunks_query: Query<Entity, With<TilemapId>>,
+    tilemap_query: Query<Entity, With<TileStorage>>,
+    mut chunk_manager: ResMut<ChunkManager>,
+    mut commands: Commands,
+) {
+    let manager = chunk_manager.as_mut();
+    *manager = ChunkManager::default();
+    // for value in chunk_manager.as_mut().spawned_chunks.iter() {
+    //     chunk_manager.spawned_chunks.remove(value);
+    // }
+    for entity in chunks_query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+
+    for entity in tilemap_query.iter() {
+        commands.entity(entity).despawn_recursive();
+    }
+}
+
+pub fn run_if_map_respawned(spawner_query: Query<&MapSpawner>) -> ShouldRun {
+    let map_spawner = spawner_query.single();
+
+    if map_spawner.respawn_map {
+        ShouldRun::Yes
+    } else {
+        ShouldRun::No
+    }
+}
+
+pub fn create_map_spawner(mut commands: Commands) {
+    commands.spawn(MapSpawner { respawn_map: false });
 }
 
 pub fn spawn_map(
@@ -21,8 +84,8 @@ pub fn spawn_map(
     let tile_map = dungeon_map.get_tile_map();
     commands.insert_resource(dungeon_map.get_tile_map());
 
-    for x in (-4)..(22) as i32 {
-        for y in (-4)..(12) as i32 {
+    for x in (-2)..(11) as i32 {
+        for y in (-2)..(6) as i32 {
             let chunk_pos = IVec2::new(x * (CHUNK_SIZE.x as i32), y * (CHUNK_SIZE.y as i32));
 
             chunk_manager
