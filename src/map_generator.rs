@@ -88,7 +88,7 @@ impl MapGenerator {
     pub fn place_room(
         &mut self,
         room: Room,
-        rooms: Vec<(Room, Vec2)>,
+        rooms: &Vec<(Room, Vec2)>,
         entrance: IVec2,
         joining_dir: Direction,
     ) -> Vec2 {
@@ -150,50 +150,34 @@ impl MapGenerator {
         let starting_room = self.generate_room();
         let starting_room_pos = self.place_room(
             starting_room,
-            Vec::new(),
+            &Vec::new(),
             IVec2::new(20, 20),
             Direction::Right,
         );
 
-        let direction = self.choose_direction();
-        let corridor = self.generate_corridor(direction);
-        let corridor_pos = starting_room_pos + self.place_corridor(starting_room, direction);
+        let mut rooms = vec![(starting_room, starting_room_pos)];
+        let mut corridors: Vec<(Corridor, Vec2)> = vec![];
 
-        let joining_room = self.generate_room();
-        let entrance = corridor.lengths.0 + corridor.lengths.1 + corridor_pos;
+        for _ in 0..3 {
+            let (prev_room, prev_room_pos) = rooms.get(rooms.len() - 1).unwrap();
 
-        let joining_room_pos = self.place_room(
-            joining_room,
-            vec![(starting_room, starting_room_pos)],
-            IVec2::new(entrance.x as i32, entrance.y as i32),
-            corridor.shape.1,
-        );
+            let direction = self.choose_direction();
+            let corridor = self.generate_corridor(direction);
+            let corridor_pos = *prev_room_pos + self.place_corridor(*prev_room, direction);
 
-        let direction2 = self.choose_direction();
-        let corridor2 = self.generate_corridor(direction2);
-        let corridor_pos2 = joining_room_pos + self.place_corridor(joining_room, direction2);
+            let joining_room = self.generate_room();
+            let entrance = corridor.lengths.0 + corridor.lengths.1 + corridor_pos;
 
-        let room3 = self.generate_room();
-        let entrance2 = corridor2.lengths.0 + corridor2.lengths.1 + corridor_pos2;
+            let joining_room_pos = self.place_room(
+                joining_room,
+                &rooms,
+                IVec2::new(entrance.x as i32, entrance.y as i32),
+                corridor.shape.1,
+            );
 
-        let room3_pos = self.place_room(
-            room3,
-            vec![
-                (starting_room, starting_room_pos),
-                (joining_room, joining_room_pos),
-            ],
-            IVec2::new(entrance2.x as i32, entrance2.y as i32),
-            corridor2.shape.1,
-        );
-
-        let rooms = vec![
-            (starting_room, starting_room_pos),
-            (joining_room, joining_room_pos),
-            (room3, room3_pos),
-        ];
-
-        let corridors: Vec<(Corridor, Vec2)> =
-            vec![(corridor, corridor_pos), (corridor2, corridor_pos2)];
+            rooms.push((joining_room, joining_room_pos));
+            corridors.push((corridor, corridor_pos));
+        }
 
         DungeonMap {
             rooms,
