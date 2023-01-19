@@ -86,24 +86,78 @@ impl MapGenerator {
         }
     }
 
-    pub fn place_room(&mut self, room: Room, entrance: IVec2, joining_dir: Direction) -> Vec2 {
+    pub fn place_room(
+        &mut self,
+        room: Room,
+        rooms: Vec<(Room, Vec2)>,
+        entrance: IVec2,
+        joining_dir: Direction,
+    ) -> Vec2 {
+        for _ in 0..100 {
+            let result = self.try_place_room(room, &rooms, entrance, joining_dir);
+            if result.is_ok() {
+                return result.unwrap();
+            }
+        }
+
+        return Vec2::new(0.0, 0.0);
+    }
+
+    pub fn try_place_room(
+        &mut self,
+        room: Room,
+        rooms: &Vec<(Room, Vec2)>,
+        entrance: IVec2,
+        joining_dir: Direction,
+    ) -> Result<Vec2, ()> {
         let width = room.width - 1;
         let height = room.height - 1;
 
         let (x, y) = match joining_dir {
-            Direction::Down => (self.rng.gen_range(1..width), height),
-            Direction::Up => (self.rng.gen_range(1..width), 0),
-            Direction::Left => (width, self.rng.gen_range(1..height)),
-            Direction::Right => (0, self.rng.gen_range(1..height)),
+            Direction::Down => (self.rng.gen_range(1..(width - 1)), height),
+            Direction::Up => (self.rng.gen_range(1..(width - 1)), 0),
+            Direction::Left => (width, self.rng.gen_range(1..(height - 1))),
+            Direction::Right => (0, self.rng.gen_range(1..(height - 1))),
         };
 
-        Vec2::new(entrance.x as f32 - x as f32, entrance.y as f32 - y as f32)
+        println!("x: {:?} y: {:?}", x, y);
+
+        let possible_pos = Vec2::new(entrance.x as f32 - x as f32, entrance.y as f32 - y as f32);
+
+        if let Some(r2) = rooms.get(0) {
+            let lhs: (i32, i32, i32, i32) = (
+                possible_pos.x as i32,
+                possible_pos.x as i32 + room.width as i32 - 1,
+                possible_pos.y as i32,
+                possible_pos.y as i32 + room.height as i32 - 1,
+            );
+
+            let rhs: (i32, i32, i32, i32) = (
+                r2.1.x as i32,
+                r2.1.x as i32 + r2.0.width as i32 - 1,
+                r2.1.y as i32,
+                r2.1.y as i32 + r2.0.height as i32 - 1,
+            );
+
+            if lhs.0 <= rhs.0 && lhs.1 >= rhs.0 || lhs.1 >= rhs.1 && lhs.0 <= rhs.1 {
+                if lhs.2 <= rhs.2 && lhs.3 >= rhs.2 || lhs.3 >= rhs.3 && lhs.2 <= rhs.3 {
+                    return Err(());
+                }
+            }
+            return Ok(possible_pos);
+        }
+
+        Ok(possible_pos)
     }
 
     pub fn generate_random(&mut self) -> DungeonMap {
         let starting_room = self.generate_room();
-        let starting_room_pos =
-            self.place_room(starting_room, IVec2::new(12, 12), Direction::Right);
+        let starting_room_pos = self.place_room(
+            starting_room,
+            Vec::new(),
+            IVec2::new(20, 20),
+            Direction::Right,
+        );
 
         let direction = self.choose_direction();
         let corridor = self.generate_corridor(direction);
@@ -114,6 +168,7 @@ impl MapGenerator {
 
         let joining_room_pos = self.place_room(
             joining_room,
+            vec![(starting_room, starting_room_pos)],
             IVec2::new(entrance.x as i32, entrance.y as i32),
             corridor.shape.1,
         );
@@ -184,9 +239,9 @@ impl MapGenerator {
 
         let second_hall_vec: Vec2 = second_hall_direction.into();
 
-        let length1 = self.rng.gen_range(2..10) as f32;
+        let length1 = self.rng.gen_range(1..10) as f32;
 
-        let turn_length = self.rng.gen_range(2..10) as f32;
+        let turn_length = self.rng.gen_range(1..10) as f32;
 
         let first = Vec2::new(first_hall_vec.x * length1, first_hall_vec.y * length1);
 
@@ -264,7 +319,7 @@ impl DungeonMap {
             let second_hall_vec: IVec2 = corridor.shape.1.into();
             let perp2 = second_hall_vec.perp();
 
-            for i in 0..(first_hall_length) {
+            for i in 0..(first_hall_length + 1) {
                 let x: i32 = x_offset + (i as i32) * (first_hall_dir.x as i32);
                 let y: i32 = y_offset + (i as i32) * (first_hall_dir.y as i32);
 
@@ -276,7 +331,7 @@ impl DungeonMap {
                 s = IVec2::new(x, y);
             }
 
-            let j = first_hall_length;
+            let j = first_hall_length + 1;
             let x: i32 = x_offset + (j as i32) * (first_hall_dir.x as i32);
             let y: i32 = y_offset + (j as i32) * (first_hall_dir.y as i32);
 
