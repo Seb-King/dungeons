@@ -1,6 +1,5 @@
 use bevy::{prelude::*, utils::HashMap};
 use rand::{rngs::ThreadRng, Rng};
-use std::ops::Add;
 
 #[derive(Clone, Copy)]
 pub struct Room {
@@ -120,11 +119,9 @@ impl MapGenerator {
             Direction::Right => (0, self.rng.gen_range(1..(height - 1))),
         };
 
-        println!("x: {:?} y: {:?}", x, y);
-
         let possible_pos = Vec2::new(entrance.x as f32 - x as f32, entrance.y as f32 - y as f32);
 
-        if let Some(r2) = rooms.get(0) {
+        for r in rooms {
             let lhs: (i32, i32, i32, i32) = (
                 possible_pos.x as i32,
                 possible_pos.x as i32 + room.width as i32 - 1,
@@ -133,10 +130,10 @@ impl MapGenerator {
             );
 
             let rhs: (i32, i32, i32, i32) = (
-                r2.1.x as i32,
-                r2.1.x as i32 + r2.0.width as i32 - 1,
-                r2.1.y as i32,
-                r2.1.y as i32 + r2.0.height as i32 - 1,
+                r.1.x as i32,
+                r.1.x as i32 + r.0.width as i32 - 1,
+                r.1.y as i32,
+                r.1.y as i32 + r.0.height as i32 - 1,
             );
 
             if lhs.0 <= rhs.0 && lhs.1 >= rhs.0 || lhs.1 >= rhs.1 && lhs.0 <= rhs.1 {
@@ -144,7 +141,6 @@ impl MapGenerator {
                     return Err(());
                 }
             }
-            return Ok(possible_pos);
         }
 
         Ok(possible_pos)
@@ -173,12 +169,31 @@ impl MapGenerator {
             corridor.shape.1,
         );
 
+        let direction2 = self.choose_direction();
+        let corridor2 = self.generate_corridor(direction2);
+        let corridor_pos2 = joining_room_pos + self.place_corridor(joining_room, direction2);
+
+        let room3 = self.generate_room();
+        let entrance2 = corridor2.lengths.0 + corridor2.lengths.1 + corridor_pos2;
+
+        let room3_pos = self.place_room(
+            room3,
+            vec![
+                (starting_room, starting_room_pos),
+                (joining_room, joining_room_pos),
+            ],
+            IVec2::new(entrance2.x as i32, entrance2.y as i32),
+            corridor2.shape.1,
+        );
+
         let rooms = vec![
             (starting_room, starting_room_pos),
             (joining_room, joining_room_pos),
+            (room3, room3_pos),
         ];
 
-        let corridors: Vec<(Corridor, Vec2)> = vec![(corridor, corridor_pos)];
+        let corridors: Vec<(Corridor, Vec2)> =
+            vec![(corridor, corridor_pos), (corridor2, corridor_pos2)];
 
         DungeonMap {
             rooms,
