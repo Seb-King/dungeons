@@ -1,5 +1,6 @@
 use bevy::{prelude::*, utils::HashMap};
 use rand::{rngs::ThreadRng, Rng};
+use std::ops::Add;
 
 #[derive(Clone, Copy)]
 pub struct Room {
@@ -48,12 +49,34 @@ impl TileMap {
     }
 }
 
-#[derive(Clone, Copy)]
-enum Direction {
+#[derive(Debug, Clone, Copy)]
+pub enum Direction {
     Up,
     Down,
     Left,
     Right,
+}
+
+impl From<Direction> for Vec2 {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::Up => Vec2::Y,
+            Direction::Down => Vec2::NEG_Y,
+            Direction::Right => Vec2::X,
+            Direction::Left => Vec2::NEG_X,
+        }
+    }
+}
+
+impl From<Direction> for IVec2 {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::Up => IVec2::Y,
+            Direction::Down => IVec2::NEG_Y,
+            Direction::Right => IVec2::X,
+            Direction::Left => IVec2::NEG_X,
+        }
+    }
 }
 
 impl MapGenerator {
@@ -101,24 +124,44 @@ impl MapGenerator {
     }
 
     fn generate_corridor(&mut self, direction: Direction) -> Corridor {
-        let first_hall_vec = match direction {
-            Direction::Up => Vec2::Y,
-            Direction::Down => Vec2::NEG_Y,
-            Direction::Right => Vec2::X,
-            Direction::Left => Vec2::NEG_X,
+        let first_hall_vec: Vec2 = direction.into();
+
+        let second_hall_direction = match direction {
+            Direction::Up => {
+                if self.rng.gen_bool(0.5) {
+                    Direction::Left
+                } else {
+                    Direction::Right
+                }
+            }
+            Direction::Down => {
+                if self.rng.gen_bool(0.5) {
+                    Direction::Left
+                } else {
+                    Direction::Right
+                }
+            }
+            Direction::Right => {
+                if self.rng.gen_bool(0.5) {
+                    Direction::Up
+                } else {
+                    Direction::Down
+                }
+            }
+            Direction::Left => {
+                if self.rng.gen_bool(0.5) {
+                    Direction::Up
+                } else {
+                    Direction::Down
+                }
+            }
         };
 
-        let second_hall_vec = match direction {
-            Direction::Up => Vec2::X,
-            Direction::Down => Vec2::X,
-            Direction::Right => Vec2::Y,
-            Direction::Left => Vec2::Y,
-        };
+        let second_hall_vec: Vec2 = second_hall_direction.into();
 
         let length1 = self.rng.gen_range(2..10) as f32;
 
-        let sign = if self.rng.gen_bool(0.5) { 1 } else { -1 };
-        let turn_length = (self.rng.gen_range(2..10) * sign) as f32;
+        let turn_length = self.rng.gen_range(2..10) as f32;
 
         let first = Vec2::new(first_hall_vec.x * length1, first_hall_vec.y * length1);
 
@@ -128,7 +171,8 @@ impl MapGenerator {
         );
 
         Corridor {
-            shape: (first, second),
+            lengths: (first, second),
+            shape: (direction, second_hall_direction),
         }
     }
 
@@ -155,7 +199,8 @@ pub struct DungeonMap {
 
 #[derive(Debug, Clone, Copy)]
 pub struct Corridor {
-    pub shape: (Vec2, Vec2),
+    pub lengths: (Vec2, Vec2),
+    pub shape: (Direction, Direction),
 }
 
 impl DungeonMap {
@@ -182,26 +227,47 @@ impl DungeonMap {
             let x_offset = starting_pos.x as i32;
             let y_offset = starting_pos.y as i32;
 
-            let first_hall_length = corridor.shape.0.length() as u32;
-            let second_hall_length = corridor.shape.1.length() as u32;
+            let first_hall_length = corridor.lengths.0.length() as u32;
+            let second_hall_length = corridor.lengths.1.length() as u32;
 
-            let first_hall_dir = corridor.shape.0.normalize_or_zero();
+            let first_hall_dir = corridor.lengths.0.normalize_or_zero();
 
             let mut s = IVec2::ZERO;
 
-            for i in 0..first_hall_length {
+            let first_hall_vec: IVec2 = corridor.shape.0.into();
+            let perp1 = first_hall_vec.perp();
+            let second_hall_vec: IVec2 = corridor.shape.1.into();
+            let perp2 = second_hall_vec.perp();
+
+            for i in 0..(first_hall_length) {
                 let x: i32 = x_offset + (i as i32) * (first_hall_dir.x as i32);
                 let y: i32 = y_offset + (i as i32) * (first_hall_dir.y as i32);
-                tile_map.set(IVec2::new(x, y), TileType::Floor);
+
+                let floor_pos = IVec2::new(x, y);
+                tile_map.set(floor_pos, TileType::Floor);
+                tile_map.set(floor_pos + perp1, TileType::Wall);
+                tile_map.set(floor_pos - perp1, TileType::Wall);
 
                 s = IVec2::new(x, y);
             }
 
-            let second_hall_dir = corridor.shape.1.normalize_or_zero();
+            let j = first_hall_length;
+            let x: i32 = x_offset + (j as i32) * (first_hall_dir.x as i32);
+            let y: i32 = y_offset + (j as i32) * (first_hall_dir.y as i32);
+
+            let floor_pos = IVec2::new(x, y);
+            tile_map.set(floor_pos, TileType::Wall);
+            tile_map.set(floor_pos + perp1, TileType::Wall);
+            tile_map.set(floor_pos - perp1, TileType::Wall);
+
+            let second_hall_dir = corridor.lengths.1.normalize_or_zero();
             for i in 0..second_hall_length {
                 let x: i32 = s.x + ((i + 1) as i32) * (second_hall_dir.x as i32);
                 let y: i32 = s.y + ((i + 1) as i32) * (second_hall_dir.y as i32);
-                tile_map.set(IVec2::new(x, y), TileType::Floor);
+                let floor_pos = IVec2::new(x, y);
+                tile_map.set(floor_pos, TileType::Floor);
+                tile_map.set(floor_pos + perp2, TileType::Wall);
+                tile_map.set(floor_pos - perp2, TileType::Wall);
             }
         }
         return tile_map;
