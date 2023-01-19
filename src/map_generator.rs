@@ -86,17 +86,42 @@ impl MapGenerator {
         }
     }
 
+    pub fn place_room(&mut self, room: Room, entrance: IVec2, joining_dir: Direction) -> Vec2 {
+        let width = room.width - 1;
+        let height = room.height - 1;
+
+        let (x, y) = match joining_dir {
+            Direction::Down => (self.rng.gen_range(1..width), height),
+            Direction::Up => (self.rng.gen_range(1..width), 0),
+            Direction::Left => (width, self.rng.gen_range(1..height)),
+            Direction::Right => (0, self.rng.gen_range(1..height)),
+        };
+
+        Vec2::new(entrance.x as f32 - x as f32, entrance.y as f32 - y as f32)
+    }
+
     pub fn generate_random(&mut self) -> DungeonMap {
         let starting_room = self.generate_room();
-        let starting_room_pos = Vec2::new(
-            self.rng.gen_range(4..16) as f32,
-            self.rng.gen_range(4..16) as f32,
-        );
+        let starting_room_pos =
+            self.place_room(starting_room, IVec2::new(12, 12), Direction::Right);
+
         let direction = self.choose_direction();
         let corridor = self.generate_corridor(direction);
         let corridor_pos = starting_room_pos + self.place_corridor(starting_room, direction);
 
-        let rooms = vec![(starting_room, starting_room_pos)];
+        let joining_room = self.generate_room();
+        let entrance = corridor.lengths.0 + corridor.lengths.1 + corridor_pos;
+
+        let joining_room_pos = self.place_room(
+            joining_room,
+            IVec2::new(entrance.x as i32, entrance.y as i32),
+            corridor.shape.1,
+        );
+
+        let rooms = vec![
+            (starting_room, starting_room_pos),
+            (joining_room, joining_room_pos),
+        ];
 
         let corridors: Vec<(Corridor, Vec2)> = vec![(corridor, corridor_pos)];
 
@@ -108,7 +133,7 @@ impl MapGenerator {
     }
 
     fn generate_room(&mut self) -> Room {
-        Room::new(self.rng.gen_range(4..16), self.rng.gen_range(4..16))
+        Room::new(self.rng.gen_range(6..16), self.rng.gen_range(6..16))
     }
 
     fn choose_direction(&mut self) -> Direction {
