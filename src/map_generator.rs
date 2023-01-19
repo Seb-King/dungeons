@@ -84,6 +84,55 @@ impl MapGenerator {
             rng: rand::thread_rng(),
         }
     }
+    pub fn generate(&mut self) -> DungeonMap {
+        let (rooms, corridors) = self.generate_layout(3);
+
+        DungeonMap {
+            rooms,
+            corridors,
+            map_size: (80, 45),
+        }
+    }
+
+    fn generate_layout(&mut self, room_count: u32) -> (Vec<(Room, Vec2)>, Vec<(Corridor, Vec2)>) {
+        if room_count == 0 {
+            return (Vec::new(), Vec::new());
+        }
+
+        let starting_room = self.generate_room();
+        let starting_room_pos = self.place_room(
+            starting_room,
+            &Vec::new(),
+            IVec2::new(20, 20),
+            Direction::Right,
+        );
+
+        let mut rooms = vec![(starting_room, starting_room_pos)];
+        let mut corridors: Vec<(Corridor, Vec2)> = vec![];
+
+        for _ in 0..room_count {
+            let (prev_room, prev_room_pos) = rooms.get(rooms.len() - 1).unwrap();
+
+            let direction = self.choose_direction();
+            let corridor = self.generate_corridor(direction);
+            let corridor_pos = *prev_room_pos + self.place_corridor(*prev_room, direction);
+
+            let joining_room = self.generate_room();
+            let entrance = corridor.lengths.0 + corridor.lengths.1 + corridor_pos;
+
+            let joining_room_pos = self.place_room(
+                joining_room,
+                &rooms,
+                IVec2::new(entrance.x as i32, entrance.y as i32),
+                corridor.shape.1,
+            );
+
+            rooms.push((joining_room, joining_room_pos));
+            corridors.push((corridor, corridor_pos));
+        }
+
+        (rooms, corridors)
+    }
 
     pub fn place_room(
         &mut self,
@@ -144,46 +193,6 @@ impl MapGenerator {
         }
 
         Ok(possible_pos)
-    }
-
-    pub fn generate_random(&mut self) -> DungeonMap {
-        let starting_room = self.generate_room();
-        let starting_room_pos = self.place_room(
-            starting_room,
-            &Vec::new(),
-            IVec2::new(20, 20),
-            Direction::Right,
-        );
-
-        let mut rooms = vec![(starting_room, starting_room_pos)];
-        let mut corridors: Vec<(Corridor, Vec2)> = vec![];
-
-        for _ in 0..3 {
-            let (prev_room, prev_room_pos) = rooms.get(rooms.len() - 1).unwrap();
-
-            let direction = self.choose_direction();
-            let corridor = self.generate_corridor(direction);
-            let corridor_pos = *prev_room_pos + self.place_corridor(*prev_room, direction);
-
-            let joining_room = self.generate_room();
-            let entrance = corridor.lengths.0 + corridor.lengths.1 + corridor_pos;
-
-            let joining_room_pos = self.place_room(
-                joining_room,
-                &rooms,
-                IVec2::new(entrance.x as i32, entrance.y as i32),
-                corridor.shape.1,
-            );
-
-            rooms.push((joining_room, joining_room_pos));
-            corridors.push((corridor, corridor_pos));
-        }
-
-        DungeonMap {
-            rooms,
-            corridors,
-            map_size: (80, 45),
-        }
     }
 
     fn generate_room(&mut self) -> Room {

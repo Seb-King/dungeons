@@ -79,7 +79,7 @@ pub fn spawn_map(
     mut chunk_manager: ResMut<ChunkManager>,
 ) {
     let mut generator = MapGenerator::new();
-    let dungeon_map = generator.generate_random();
+    let dungeon_map = generator.generate();
 
     let tile_map = dungeon_map.get_tile_map();
     commands.insert_resource(dungeon_map.get_tile_map());
