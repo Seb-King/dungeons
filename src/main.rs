@@ -1,3 +1,4 @@
+mod dungeon_generator;
 mod map;
 mod map_generator;
 mod movement;
