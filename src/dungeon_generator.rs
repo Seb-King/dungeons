@@ -54,7 +54,8 @@ trait Generator<T, Params> {
 
     fn generate(&self) -> T;
 }
-type Step<T> = Box<dyn Fn(&T) -> T>;
+
+type Step<T> = fn(&T) -> T;
 
 impl DungeonGenerator {
     fn new() -> DungeonGenerator {
@@ -118,7 +119,7 @@ mod dungeon_builder_tests {
 
     #[test]
     fn add_room_works() {
-        let builder = DungeonGenerator::new().add_step(Box::new(add_room));
+        let builder = DungeonGenerator::new().add_step(add_room);
 
         assert_eq!(builder.generate().rooms.len(), 1);
     }
@@ -126,9 +127,10 @@ mod dungeon_builder_tests {
     #[test]
     fn add_multiple_rooms() {
         let builder = DungeonGenerator::new()
-            .add_step(Box::new(add_room))
-            .add_step(Box::new(add_room));
+            .add_step(add_room)
+            .add_step(add_room)
+            .add_step(add_room);
 
-        assert_eq!(builder.generate().rooms.len(), 2);
+        assert_eq!(builder.generate().rooms.len(), 3);
     }
 }

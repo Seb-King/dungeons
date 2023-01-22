@@ -42,8 +42,8 @@ impl Plugin for SetupPlugin {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        // .add_plugin(LogDiagnosticsPlugin::default())
-        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(SetupPlugin)
         .add_system(bevy::window::close_on_esc)
         .add_plugin(TilemapPlugin)
