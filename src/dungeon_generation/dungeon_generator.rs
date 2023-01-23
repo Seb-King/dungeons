@@ -1,4 +1,4 @@
-use crate::dungeon_generation::room::{Rectangle, Room};
+use crate::dungeon_generation::room::{Collision, Rectangle, Room};
 use bevy::prelude::IVec2;
 use rand::prelude::ThreadRng;
 use rand::Rng;
@@ -89,7 +89,33 @@ fn add_room(state: DungeonState) -> Result<DungeonState, String> {
         return Ok(add_initial_room(&state));
     }
 
-    return Err("Failed to add room".into());
+    let mut rng = state.rng.borrow_mut();
+
+    let room = Room {
+        shape: Rectangle {
+            width: rng.gen_range(6..16),
+            height: rng.gen_range(6..16),
+        },
+        position: IVec2::new(30, 30),
+    };
+
+    let mut rooms = state.layout.rooms.clone();
+
+    let disjoint_rooms = rooms.iter().all(|r| !r.collides_with(&room));
+
+    if disjoint_rooms {
+        rooms.push(room);
+
+        return Ok(DungeonState {
+            layout: DungeonLayout {
+                rooms,
+                corridors: state.layout.corridors.clone(),
+            },
+            rng: Rc::clone(&state.rng),
+        });
+    }
+
+    Err("Failed to add room".into())
 }
 
 fn add_initial_room(state: &DungeonState) -> DungeonState {
@@ -124,6 +150,15 @@ mod dungeon_builder_tests {
         let builder = DungeonGenerator::new().add_step(add_room);
 
         assert_eq!(builder.generate().unwrap().rooms.len(), 1);
+    }
+
+    #[test]
+    fn add_two_rooms() {
+        let builder = DungeonGenerator::new()
+            .add_step(add_room)
+            .add_step(add_room);
+
+        assert_eq!(builder.generate().unwrap().rooms.len(), 2);
     }
 
     #[test]
