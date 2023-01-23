@@ -1,27 +1,9 @@
-use crate::dungeon_generation::room::{Collision, Rectangle, Room};
+use crate::dungeon_generation::room::{Collision, Corridor, Rectangle, Room};
 use bevy::prelude::IVec2;
 use rand::prelude::ThreadRng;
 use rand::Rng;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-#[derive(Clone)]
-enum Orientation {
-    VERTICAL,
-    HORIZONTAL,
-}
-
-#[derive(Clone)]
-struct IShape {
-    orientation: Orientation,
-    length: u32,
-}
-
-#[derive(Clone)]
-struct Corridor {
-    shape: IShape,
-    position: IVec2,
-}
 
 struct DungeonState {
     layout: DungeonLayout,
