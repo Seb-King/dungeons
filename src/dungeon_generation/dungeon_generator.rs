@@ -2,6 +2,7 @@ use crate::dungeon_generation::room::{Collision, Corridor, Rectangle, Room};
 use bevy::prelude::IVec2;
 use rand::prelude::ThreadRng;
 use rand::Rng;
+use std::borrow::Borrow;
 use std::cell::RefCell;
 use std::rc::Rc;
 
@@ -10,14 +11,14 @@ struct DungeonState {
     rng: Rc<RefCell<ThreadRng>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 struct DungeonLayout {
     rooms: Vec<Room>,
     corridors: Vec<Corridor>,
 }
 
 pub struct DungeonGenerator {
-    steps: Vec<Step<DungeonState>>,
+    steps: Vec<BoxedStep<DungeonState>>,
 }
 
 trait Generator<T, Params> {
@@ -26,7 +27,8 @@ trait Generator<T, Params> {
     fn generate(&self) -> T;
 }
 
-type Step<T> = fn(T) -> Result<T, String>;
+type Step<T> = fn(&T) -> Result<T, String>;
+type BoxedStep<T> = Box<dyn Fn(&T) -> Result<T, String>>;
 
 impl DungeonGenerator {
     pub fn new() -> DungeonGenerator {
@@ -44,13 +46,25 @@ impl DungeonGenerator {
         let new_state: Result<DungeonState, String> = self
             .steps
             .iter()
-            .try_fold(state, |result, step| step(result));
+            .try_fold(state, |result, step| step(&result));
 
         return new_state.map(|final_state| final_state.layout);
     }
 
     fn add_step(mut self, step: Step<DungeonState>) -> Self {
-        self.steps.push(step);
+        self.steps.push(Box::new(step));
+        self
+    }
+
+    fn add_retryable_step(mut self, step: Step<DungeonState>) -> Self {
+        let retry_step_until_ok = move |s: &DungeonState| -> Result<DungeonState, String> {
+            let mut attempt: Result<DungeonState, String> = Err("First attempt".to_string());
+            while attempt.is_err() {
+                attempt = step(s);
+            }
+            attempt
+        };
+        self.steps.push(Box::new(retry_step_until_ok));
         self
     }
 }
@@ -64,13 +78,7 @@ impl DungeonLayout {
     }
 }
 
-fn add_room(state: DungeonState) -> Result<DungeonState, String> {
-    let rooms = state.layout.rooms.clone();
-
-    if rooms.len() == 0 {
-        return Ok(add_initial_room(&state));
-    }
-
+fn add_room(state: &DungeonState) -> Result<DungeonState, String> {
     let mut rng = state.rng.borrow_mut();
 
     let room = Room {
@@ -78,7 +86,7 @@ fn add_room(state: DungeonState) -> Result<DungeonState, String> {
             width: rng.gen_range(6..16),
             height: rng.gen_range(6..16),
         },
-        position: IVec2::new(30, 30),
+        position: IVec2::new(rng.gen_range(0..30), rng.gen_range(0..30)),
     };
 
     let mut rooms = state.layout.rooms.clone();
@@ -97,30 +105,7 @@ fn add_room(state: DungeonState) -> Result<DungeonState, String> {
         });
     }
 
-    Err("Failed to add room".into())
-}
-
-fn add_initial_room(state: &DungeonState) -> DungeonState {
-    let mut rng = state.rng.borrow_mut();
-    let mut rooms = state.layout.rooms.clone();
-
-    let room = Room {
-        shape: Rectangle {
-            width: rng.gen_range(6..16),
-            height: rng.gen_range(6..16),
-        },
-        position: IVec2::new(0, 0),
-    };
-
-    rooms.push(room);
-
-    return DungeonState {
-        layout: DungeonLayout {
-            rooms,
-            corridors: state.layout.corridors.clone(),
-        },
-        rng: Rc::clone(&state.rng),
-    };
+    Err("Failed to add room".to_string())
 }
 
 #[cfg(test)]
@@ -151,5 +136,28 @@ mod dungeon_builder_tests {
             .add_step(add_room);
 
         assert_eq!(builder.generate().unwrap().rooms.len(), 3);
+    }
+
+    #[test]
+    fn add_retryable_step() {
+        let builder = DungeonGenerator::new()
+            .add_retryable_step(add_room)
+            .add_retryable_step(add_room);
+
+        assert_eq!(builder.generate().unwrap().rooms.len(), 2);
+    }
+
+    #[test]
+    fn add_retryable_step_5_times() {
+        let builder = DungeonGenerator::new()
+            .add_retryable_step(add_room)
+            .add_retryable_step(add_room)
+            .add_retryable_step(add_room)
+            .add_retryable_step(add_room)
+            .add_retryable_step(add_room);
+
+        let dungeon = builder.generate().unwrap();
+
+        assert_eq!(dungeon.rooms.len(), 5);
     }
 }

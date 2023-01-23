@@ -1,5 +1,4 @@
 use bevy::math::IVec2;
-use std::ops::Mul;
 
 #[derive(Clone, Debug)]
 pub struct Rectangle {
@@ -13,19 +12,19 @@ pub struct Room {
     pub position: IVec2,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum Orientation {
     VERTICAL,
     HORIZONTAL,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct IShape {
     orientation: Orientation,
     length: u32,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Corridor {
     shape: IShape,
     position: IVec2,
