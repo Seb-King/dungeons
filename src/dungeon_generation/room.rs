@@ -1,9 +1,14 @@
 use bevy::math::IVec2;
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Rectangle {
     pub width: u32,
     pub height: u32,
+}
+
+pub struct CollisionBox {
+    pub shape: Rectangle,
+    pub position: IVec2,
 }
 
 #[derive(Clone, Debug)]
@@ -12,77 +17,94 @@ pub struct Room {
     pub position: IVec2,
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Orientation {
     VERTICAL,
     HORIZONTAL,
 }
 
+pub struct Line {
+    pub start: i32,
+    pub end: i32,
+}
+
 #[derive(Clone, Debug)]
 pub struct IShape {
-    orientation: Orientation,
-    length: u32,
+    pub orientation: Orientation,
+    pub length: u32,
 }
 
 #[derive(Clone, Debug)]
 pub struct Corridor {
-    shape: IShape,
-    position: IVec2,
+    pub shape: IShape,
+    pub position: IVec2,
 }
 
-pub trait Collision<T> {
-    fn collides_with(&self, rhs: &T) -> bool;
-}
-
-impl Collision<Room> for Room {
-    fn collides_with(&self, rhs: &Self) -> bool {
-        let left_coords: (i32, i32, i32, i32) = (
-            self.position.x,
-            self.position.x + self.shape.width as i32 - 1,
-            self.position.y,
-            self.position.y + self.shape.height as i32 - 1,
-        );
-
-        let right_coords: (i32, i32, i32, i32) = (
-            rhs.position.x,
-            rhs.position.x + rhs.shape.width as i32 - 1,
-            rhs.position.y,
-            rhs.position.y + rhs.shape.height as i32 - 1,
-        );
-
-        return (left_coords.0 <= right_coords.0 && left_coords.1 >= right_coords.0
-            || left_coords.1 >= right_coords.1 && left_coords.0 <= right_coords.1)
-            && (left_coords.2 <= right_coords.2 && left_coords.3 >= right_coords.2
-                || left_coords.3 >= right_coords.3 && left_coords.2 <= right_coords.3);
+impl Line {
+    fn new(start: i32, end: i32) -> Line {
+        Line { start, end }
     }
 }
 
-impl Collision<Corridor> for Corridor {
-    fn collides_with(&self, rhs: &Self) -> bool {
-        let left_dir: IVec2 = self.shape.orientation.clone().into();
-        let left_end_point: IVec2 = self.position + (self.shape.length as i32) * left_dir;
+pub trait Collision {
+    fn collides_with(&self, rhs: &impl Collision) -> bool {
+        let left_box = self.to_collision_box();
+        let right_box = rhs.to_collision_box();
 
-        let left_coords: (i32, i32, i32, i32) = (
-            self.position.x,
-            left_end_point.x,
-            self.position.y,
-            left_end_point.y,
+        let left_x_line = Line::new(
+            left_box.position.x,
+            left_box.position.x + left_box.shape.width as i32 - 1,
         );
 
-        let right_dir: IVec2 = rhs.shape.orientation.clone().into();
-        let right_end_point: IVec2 = rhs.position + (rhs.shape.length as i32) * right_dir;
-
-        let right_coords: (i32, i32, i32, i32) = (
-            rhs.position.x,
-            right_end_point.x,
-            rhs.position.y,
-            right_end_point.y,
+        let left_y_line = Line::new(
+            left_box.position.y,
+            left_box.position.y + left_box.shape.height as i32 - 1,
         );
 
-        return (left_coords.0 <= right_coords.0 && left_coords.1 >= right_coords.0
-            || left_coords.1 >= right_coords.1 && left_coords.0 <= right_coords.1)
-            && (left_coords.2 <= right_coords.2 && left_coords.3 >= right_coords.2
-                || left_coords.3 >= right_coords.3 && left_coords.2 <= right_coords.3);
+        let right_x_line = Line::new(
+            right_box.position.x,
+            right_box.position.x + right_box.shape.width as i32 - 1,
+        );
+
+        let right_y_line = Line::new(
+            right_box.position.y,
+            right_box.position.y + right_box.shape.height as i32 - 1,
+        );
+
+        return lines_collide(&left_x_line, &right_x_line)
+            && lines_collide(&left_y_line, &right_y_line);
+    }
+
+    fn to_collision_box(&self) -> CollisionBox;
+}
+
+fn lines_collide(lhs: &Line, rhs: &Line) -> bool {
+    return (rhs.start <= lhs.start && lhs.start <= rhs.end)
+        || (rhs.start <= lhs.end && lhs.end <= rhs.end)
+        || (lhs.start < rhs.start && rhs.end < lhs.end);
+}
+
+impl Collision for Room {
+    fn to_collision_box(&self) -> CollisionBox {
+        CollisionBox {
+            shape: self.shape,
+            position: self.position,
+        }
+    }
+}
+
+impl Collision for Corridor {
+    fn to_collision_box(&self) -> CollisionBox {
+        let dir: IVec2 = self.shape.orientation.clone().into();
+        let end_point: IVec2 = self.position + (self.shape.length as i32) * dir;
+
+        let width = (self.position.x - end_point.x).abs() as u32 + 1;
+        let height = (self.position.y - end_point.y).abs() as u32 + 1;
+
+        CollisionBox {
+            shape: Rectangle { width, height },
+            position: self.position,
+        }
     }
 }
 
@@ -187,6 +209,7 @@ mod collision_tests {
         };
 
         assert_eq!(lhs.collides_with(&rhs), false);
+        assert_eq!(rhs.collides_with(&lhs), false);
     }
 
     #[test]
@@ -229,5 +252,47 @@ mod collision_tests {
         };
 
         assert_eq!(lhs.collides_with(&rhs), false);
+    }
+
+    #[test]
+    fn intersecting_room_and_corridor_collide() {
+        let corridor = Corridor {
+            shape: IShape {
+                length: 5,
+                orientation: HORIZONTAL,
+            },
+            position: IVec2::new(2, 2),
+        };
+
+        let room = Room {
+            shape: Rectangle {
+                width: 10,
+                height: 10,
+            },
+            position: IVec2::new(0, 0),
+        };
+
+        assert_eq!(corridor.collides_with(&room), true);
+    }
+
+    #[test]
+    fn disjoint_room_and_corridor_dont_collide() {
+        let corridor = Corridor {
+            shape: IShape {
+                length: 5,
+                orientation: HORIZONTAL,
+            },
+            position: IVec2::new(1, 20),
+        };
+
+        let room = Room {
+            shape: Rectangle {
+                width: 5,
+                height: 5,
+            },
+            position: IVec2::new(0, 0),
+        };
+
+        assert_eq!(corridor.collides_with(&room), false);
     }
 }

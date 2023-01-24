@@ -1,4 +1,5 @@
-use crate::dungeon_generation::room::{Collision, Corridor, Rectangle, Room};
+use crate::dungeon_generation::room::Orientation::HORIZONTAL;
+use crate::dungeon_generation::room::{Collision, Corridor, IShape, Rectangle, Room};
 use bevy::prelude::IVec2;
 use rand::prelude::ThreadRng;
 use rand::Rng;
@@ -106,6 +107,35 @@ fn add_room(state: &DungeonState) -> Result<DungeonState, String> {
     }
 
     Err("Failed to add room".to_string())
+}
+
+fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
+    let mut rng = state.rng.borrow_mut();
+
+    let corridor = Corridor {
+        shape: IShape {
+            orientation: HORIZONTAL,
+            length: rng.gen_range(3..10),
+        },
+        position: IVec2::new(rng.gen_range(0..30), rng.gen_range(0..30)),
+    };
+
+    let mut corridors = state.layout.corridors.clone();
+
+    let disjoint_from_corridors = corridors.iter().all(|c| !c.collides_with(&corridor));
+
+    if disjoint_from_corridors {
+        corridors.push(corridor);
+        return Ok(DungeonState {
+            layout: DungeonLayout {
+                rooms: state.layout.rooms.clone(),
+                corridors,
+            },
+            rng: Rc::clone(&state.rng),
+        });
+    }
+
+    Err("Failed to add corridor".to_string())
 }
 
 #[cfg(test)]
