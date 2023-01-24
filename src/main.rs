@@ -1,6 +1,5 @@
 mod dungeon_generation;
 mod map;
-mod map_generator;
 mod movement;
 mod player;
 

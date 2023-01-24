@@ -1,6 +1,5 @@
+use crate::map::{TileMap, TileType};
 use bevy::prelude::*;
-
-use crate::map_generator::{TileMap, TileType};
 
 #[derive(Component)]
 pub struct Movement {

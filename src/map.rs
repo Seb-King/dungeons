@@ -1,9 +1,42 @@
+use crate::dungeon_generation::dungeon_generator::{
+    add_corridor, add_room, DungeonGenerator, DungeonLayout,
+};
+use bevy::utils::HashMap;
 use bevy::{ecs::schedule::ShouldRun, prelude::*, utils::HashSet};
 use bevy_ecs_tilemap::prelude::*;
 
-use crate::map_generator::{MapGenerator, TileMap, TileType};
-
 const CHUNK_SIZE: UVec2 = UVec2 { x: 8, y: 8 };
+
+#[derive(Component, Clone, PartialEq, Copy, Debug)]
+pub enum TileType {
+    Void,
+    Floor,
+    Wall,
+}
+
+#[derive(Resource, Default)]
+pub struct TileMap {
+    tile_map: HashMap<IVec2, TileType>,
+}
+
+impl TileMap {
+    pub fn new(map: HashMap<IVec2, TileType>) -> TileMap {
+        TileMap { tile_map: map }
+    }
+
+    pub fn get(&self, pos: IVec2) -> TileType {
+        let tile_option = self.tile_map.get(&pos);
+        if let Some(tile) = tile_option {
+            return *tile;
+        }
+
+        return TileType::Void;
+    }
+
+    pub fn set(&mut self, pos: IVec2, tile_type: TileType) {
+        self.tile_map.insert(pos, tile_type);
+    }
+}
 
 #[derive(Default, Debug, Resource)]
 pub struct ChunkManager {
@@ -24,6 +57,51 @@ pub fn respawn_map_input_system(
     if keyboard_input.clear_just_pressed(KeyCode::Space) {
         spawner.respawn_map = true;
     }
+}
+
+fn get_tile_map(layout: &DungeonLayout) -> TileMap {
+    let grid: HashMap<IVec2, TileType> = HashMap::new();
+    let mut tile_map = TileMap::new(grid);
+
+    for room in &layout.rooms {
+        for y in 0..room.shape.height {
+            for x in 0..room.shape.width {
+                let on_border =
+                    y == 0 || y == room.shape.height - 1 || x == 0 || x == room.shape.width - 1;
+                let pos = IVec2::new((x as i32 + room.position.x), (y as i32 + room.position.y));
+                if on_border {
+                    tile_map.set(pos, TileType::Wall);
+                } else {
+                    tile_map.set(pos, TileType::Floor);
+                }
+            }
+        }
+        for corridor in &layout.corridors {
+            let pos = &corridor.position;
+            let shape = &corridor.shape;
+
+            let x_offset = pos.x;
+            let y_offset = pos.y;
+
+            let length = shape.length;
+
+            let dir: IVec2 = shape.orientation.into();
+
+            let perp1 = dir.perp();
+
+            for i in 0..(length + 1) {
+                let x = x_offset + (i as i32) * dir.x;
+                let y = y_offset + (i as i32) * dir.y;
+
+                let floor_pos = IVec2::new(x, y);
+                tile_map.set(floor_pos, TileType::Floor);
+                tile_map.set(floor_pos + perp1, TileType::Wall);
+                tile_map.set(floor_pos - perp1, TileType::Wall);
+            }
+        }
+    }
+
+    return tile_map;
 }
 
 pub fn despawn_map(
@@ -78,11 +156,14 @@ pub fn spawn_map(
     asset_server: Res<AssetServer>,
     mut chunk_manager: ResMut<ChunkManager>,
 ) {
-    let mut generator = MapGenerator::new();
+    let generator = DungeonGenerator::new()
+        .add_step(add_room)
+        .add_retryable_step(add_corridor)
+        .add_retryable_step(add_room);
+
     let dungeon_map = generator.generate();
 
-    let tile_map = dungeon_map.get_tile_map();
-    commands.insert_resource(dungeon_map.get_tile_map());
+    let tile_map = get_tile_map(&dungeon_map.unwrap());
 
     for x in (-2)..(11) as i32 {
         for y in (-2)..(6) as i32 {
@@ -94,6 +175,8 @@ pub fn spawn_map(
             spawn_chunk(&tile_map, chunk_pos, &mut commands, &asset_server);
         }
     }
+
+    commands.insert_resource(tile_map);
 }
 
 fn spawn_chunk(

@@ -19,8 +19,10 @@ pub struct Room {
 
 #[derive(Clone, Copy, PartialEq, Debug)]
 pub enum Orientation {
-    VERTICAL,
-    HORIZONTAL,
+    UP,
+    DOWN,
+    LEFT,
+    RIGHT,
 }
 
 pub struct Line {
@@ -111,8 +113,10 @@ impl Collision for Corridor {
 impl From<Orientation> for IVec2 {
     fn from(value: Orientation) -> Self {
         match value {
-            Orientation::HORIZONTAL => IVec2::X,
-            Orientation::VERTICAL => IVec2::Y,
+            Orientation::RIGHT => IVec2::X,
+            Orientation::LEFT => IVec2::NEG_X,
+            Orientation::UP => IVec2::Y,
+            Orientation::DOWN => IVec2::NEG_Y,
         }
     }
 }
@@ -120,7 +124,7 @@ impl From<Orientation> for IVec2 {
 #[cfg(test)]
 mod collision_tests {
     use super::*;
-    use crate::dungeon_generation::room::Orientation::{HORIZONTAL, VERTICAL};
+    use crate::dungeon_generation::room::Orientation::{RIGHT, UP};
 
     #[test]
     fn room_collides_with_itself() {
@@ -161,7 +165,7 @@ mod collision_tests {
         let corridor = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(0, 0),
         };
@@ -174,7 +178,7 @@ mod collision_tests {
         let lhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(0, 0),
         };
@@ -182,7 +186,7 @@ mod collision_tests {
         let rhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(3, 0),
         };
@@ -195,7 +199,7 @@ mod collision_tests {
         let lhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(0, 0),
         };
@@ -203,7 +207,7 @@ mod collision_tests {
         let rhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(3, 1),
         };
@@ -217,7 +221,7 @@ mod collision_tests {
         let lhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: VERTICAL,
+                orientation: UP,
             },
             position: IVec2::new(0, 0),
         };
@@ -225,7 +229,7 @@ mod collision_tests {
         let rhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(3, 1),
         };
@@ -238,7 +242,7 @@ mod collision_tests {
         let lhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: VERTICAL,
+                orientation: UP,
             },
             position: IVec2::new(0, 0),
         };
@@ -246,7 +250,7 @@ mod collision_tests {
         let rhs = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(2, -1),
         };
@@ -259,7 +263,7 @@ mod collision_tests {
         let corridor = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(2, 2),
         };
@@ -280,7 +284,7 @@ mod collision_tests {
         let corridor = Corridor {
             shape: IShape {
                 length: 5,
-                orientation: HORIZONTAL,
+                orientation: RIGHT,
             },
             position: IVec2::new(1, 20),
         };
