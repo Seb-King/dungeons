@@ -181,8 +181,8 @@ pub fn spawn_map(
 
     let tile_map = get_tile_map(&dungeon_map.unwrap());
 
-    for x in (-2)..(11) as i32 {
-        for y in (-2)..(6) as i32 {
+    for x in (-11)..(11) as i32 {
+        for y in (-11)..(11) as i32 {
             let chunk_pos = IVec2::new(x * (CHUNK_SIZE.x as i32), y * (CHUNK_SIZE.y as i32));
 
             chunk_manager

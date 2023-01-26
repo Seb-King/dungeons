@@ -24,22 +24,31 @@ pub enum Direction {
     Right,
 }
 
-pub fn move_entities(mut query: Query<(&mut Movement, &mut Transform)>) {
+pub fn move_entities(
+    mut query: Query<(&mut Movement, &mut Transform), Without<Camera2d>>,
+    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+) {
+    let mut camera_transform = camera_query.get_single_mut().unwrap();
+
     for (mut movement, mut transform) in &mut query {
         match movement.direction {
             Direction::Up => {
+                camera_transform.translation += Vec3::Y * 16.0;
                 transform.translation += Vec3::Y * 16.0;
                 movement.position.y += 1;
             }
             Direction::Down => {
+                camera_transform.translation -= Vec3::Y * 16.0;
                 transform.translation -= Vec3::Y * 16.0;
                 movement.position.y -= 1;
             }
             Direction::Left => {
+                camera_transform.translation -= Vec3::X * 16.0;
                 transform.translation -= Vec3::X * 16.0;
                 movement.position.x -= 1;
             }
             Direction::Right => {
+                camera_transform.translation += Vec3::X * 16.0;
                 transform.translation += Vec3::X * 16.0;
                 movement.position.x += 1;
             }
