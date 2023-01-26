@@ -92,9 +92,9 @@ pub fn add_room(state: &DungeonState) -> Result<DungeonState, String> {
             + IVec2::from(corridor.shape.orientation) * (corridor.shape.length as i32 - 1);
 
         let (x, y) = match corridor.shape.orientation {
-            DOWN => (rng.gen_range(1..(width - 1)), height),
+            DOWN => (rng.gen_range(1..(width - 1)), height - 1),
             UP => (rng.gen_range(1..(width - 1)), 0),
-            LEFT => (width, rng.gen_range(1..(height - 1))),
+            LEFT => (width - 1, rng.gen_range(1..(height - 1))),
             RIGHT => (0, rng.gen_range(1..(height - 1))),
         };
 
@@ -191,6 +191,10 @@ pub fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
     }
 
     Err("Failed to add corridor".to_string())
+}
+
+pub fn add_corridor_then_room(state: &DungeonState) -> Result<DungeonState, String> {
+    return add_corridor(state).and_then(|res| add_room(&res));
 }
 
 #[cfg(test)]

@@ -1,5 +1,5 @@
 use crate::dungeon_generation::dungeon_generator::{
-    add_corridor, add_room, DungeonGenerator, DungeonLayout,
+    add_corridor, add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
 };
 use bevy::utils::HashMap;
 use bevy::{ecs::schedule::ShouldRun, prelude::*, utils::HashSet};
@@ -167,10 +167,15 @@ pub fn spawn_map(
 ) {
     let generator = DungeonGenerator::new()
         .add_retryable_step(add_room)
-        .add_retryable_step(add_corridor)
-        .add_retryable_step(add_room)
-        .add_retryable_step(add_corridor)
-        .add_retryable_step(add_room);
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_corridor_then_room);
 
     let dungeon_map = generator.generate();
 
