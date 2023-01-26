@@ -1,3 +1,4 @@
+use crate::dungeon_generation::room::Orientation::{DOWN, RIGHT, UP};
 use bevy::math::IVec2;
 
 #[derive(Clone, Copy, Debug)]
@@ -6,6 +7,7 @@ pub struct Rectangle {
     pub height: u32,
 }
 
+#[derive(Debug)]
 pub struct CollisionBox {
     pub shape: Rectangle,
     pub position: IVec2,
@@ -25,6 +27,7 @@ pub enum Orientation {
     RIGHT,
 }
 
+#[derive(Debug)]
 pub struct Line {
     pub start: i32,
     pub end: i32,
@@ -73,8 +76,10 @@ pub trait Collision {
             right_box.position.y + right_box.shape.height as i32 - 1,
         );
 
-        return lines_collide(&left_x_line, &right_x_line)
-            && lines_collide(&left_y_line, &right_y_line);
+        let x_line_collide = lines_collide(&left_x_line, &right_x_line);
+        let y_line_collide = lines_collide(&left_y_line, &right_y_line);
+
+        return x_line_collide && y_line_collide;
     }
 
     fn to_collision_box(&self) -> CollisionBox;
@@ -83,7 +88,7 @@ pub trait Collision {
 fn lines_collide(lhs: &Line, rhs: &Line) -> bool {
     return (rhs.start <= lhs.start && lhs.start <= rhs.end)
         || (rhs.start <= lhs.end && lhs.end <= rhs.end)
-        || (lhs.start < rhs.start && rhs.end < lhs.end);
+        || (lhs.start <= rhs.start && lhs.end >= rhs.end);
 }
 
 impl Collision for Room {
@@ -97,16 +102,47 @@ impl Collision for Room {
 
 impl Collision for Corridor {
     fn to_collision_box(&self) -> CollisionBox {
-        let dir: IVec2 = self.shape.orientation.clone().into();
-        let end_point: IVec2 = self.position + (self.shape.length as i32) * dir;
-
-        let width = (self.position.x - end_point.x).abs() as u32 + 1;
-        let height = (self.position.y - end_point.y).abs() as u32 + 1;
-
-        CollisionBox {
-            shape: Rectangle { width, height },
-            position: self.position,
+        if self.shape.length <= 2 {
+            return CollisionBox {
+                shape: Rectangle {
+                    width: 0,
+                    height: 0,
+                },
+                position: self.position,
+            };
         }
+
+        let orientation = match self.shape.orientation {
+            UP => UP,
+            DOWN => UP,
+            RIGHT => RIGHT,
+            LEFT => RIGHT,
+        };
+
+        let direction: IVec2 = self.shape.orientation.into();
+
+        let flipped_position = match self.shape.orientation {
+            UP => self.position,
+            DOWN => (self.shape.length as i32 - 1) * direction,
+            RIGHT => self.position,
+            LEFT => (self.shape.length as i32 - 1) * direction,
+        };
+
+        let dir: IVec2 = orientation.clone().into();
+        let perp = dir.perp().abs();
+
+        let start_point: IVec2 = flipped_position + dir - perp;
+        let end_point: IVec2 = flipped_position + (self.shape.length as i32 - 2) * dir + perp;
+
+        let width = (start_point.x - end_point.x).abs() as u32 + 1;
+        let height = (start_point.y - end_point.y).abs() as u32 + 1;
+
+        let coll = CollisionBox {
+            shape: Rectangle { width, height },
+            position: start_point,
+        };
+
+        return coll;
     }
 }
 
@@ -122,9 +158,69 @@ impl From<Orientation> for IVec2 {
 }
 
 #[cfg(test)]
+mod line_collision_tests {
+    use super::*;
+
+    #[test]
+    fn line_collides_with_itself() {
+        let line = Line::new(0, 10);
+
+        assert_eq!(lines_collide(&line, &line), true);
+    }
+
+    #[test]
+    fn line_test_1() {
+        let line_1 = Line::new(0, 10);
+        let line_2 = Line::new(0, 9);
+
+        assert_eq!(lines_collide(&line_1, &line_2), true);
+    }
+
+    #[test]
+    fn line_test_2() {
+        let line_1 = Line::new(0, 10);
+        let line_2 = Line::new(-1, 10);
+
+        assert_eq!(lines_collide(&line_1, &line_2), true);
+    }
+
+    #[test]
+    fn line_test_3() {
+        let line_1 = Line::new(0, 10);
+        let line_2 = Line::new(1, 9);
+
+        assert_eq!(lines_collide(&line_1, &line_2), true);
+    }
+
+    #[test]
+    fn line_test_4() {
+        let line_1 = Line::new(0, 10);
+        let line_2 = Line::new(2, 8);
+
+        assert_eq!(lines_collide(&line_1, &line_2), true);
+    }
+
+    #[test]
+    fn line_test_5() {
+        let line_1 = Line::new(0, 10);
+        let line_2 = Line::new(2, 12);
+
+        assert_eq!(lines_collide(&line_1, &line_2), true);
+    }
+
+    #[test]
+    fn line_test_6() {
+        let line_1 = Line::new(1, 3);
+        let line_2 = Line::new(-2, 0);
+
+        assert_eq!(lines_collide(&line_1, &line_2), false);
+    }
+}
+
+#[cfg(test)]
 mod collision_tests {
     use super::*;
-    use crate::dungeon_generation::room::Orientation::{RIGHT, UP};
+    use crate::dungeon_generation::room::Orientation::{LEFT, RIGHT, UP};
 
     #[test]
     fn room_collides_with_itself() {
@@ -174,7 +270,7 @@ mod collision_tests {
     }
 
     #[test]
-    fn intersecting_parallel_corridors_collide() {
+    fn barely_intersecting_parallel_corridors_dont_collide() {
         let lhs = Corridor {
             shape: IShape {
                 length: 5,
@@ -256,6 +352,69 @@ mod collision_tests {
         };
 
         assert_eq!(lhs.collides_with(&rhs), false);
+    }
+
+    #[test]
+    fn corridors_collide() {
+        let lhs = Corridor {
+            shape: IShape {
+                length: 5,
+                orientation: UP,
+            },
+            position: IVec2::new(0, 0),
+        };
+
+        let rhs = Corridor {
+            shape: IShape {
+                length: 5,
+                orientation: RIGHT,
+            },
+            position: IVec2::new(0, 1),
+        };
+
+        assert_eq!(lhs.collides_with(&rhs), true);
+    }
+
+    #[test]
+    fn corridors_dont_collide_1() {
+        let lhs = Corridor {
+            shape: IShape {
+                length: 5,
+                orientation: UP,
+            },
+            position: IVec2::new(0, 0),
+        };
+
+        let rhs = Corridor {
+            shape: IShape {
+                length: 5,
+                orientation: RIGHT,
+            },
+            position: IVec2::new(0, -1),
+        };
+
+        assert_eq!(lhs.collides_with(&rhs), true);
+    }
+
+    #[test]
+    fn corridors_collide_1() {
+        let lhs = Corridor {
+            shape: IShape {
+                length: 10,
+                orientation: DOWN,
+            },
+            position: IVec2::new(0, 3),
+        };
+
+        let rhs = Corridor {
+            shape: IShape {
+                length: 10,
+                orientation: LEFT,
+            },
+            position: IVec2::new(2, 0),
+        };
+
+        assert_eq!(lhs.collides_with(&rhs), true);
     }
 
     #[test]

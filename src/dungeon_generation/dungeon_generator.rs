@@ -1,5 +1,5 @@
 use crate::dungeon_generation::room::Orientation::{DOWN, LEFT, RIGHT, UP};
-use crate::dungeon_generation::room::{Collision, Corridor, IShape, Orientation, Rectangle, Room};
+use crate::dungeon_generation::room::{Collision, Corridor, IShape, Rectangle, Room};
 use bevy::prelude::IVec2;
 use rand::prelude::ThreadRng;
 use rand::Rng;
@@ -57,12 +57,15 @@ impl DungeonGenerator {
     }
 
     pub fn add_retryable_step(mut self, step: Step<DungeonState>) -> Self {
+        let max_retries = 1000;
         let retry_step_until_ok = move |s: &DungeonState| -> Result<DungeonState, String> {
+            let mut retry_count = 0;
             let mut attempt: Result<DungeonState, String> = Err("First attempt".to_string());
-            while attempt.is_err() {
+            while attempt.is_err() && retry_count < max_retries {
                 attempt = step(s);
+                retry_count += 1;
             }
-            attempt
+            attempt.map_err(|err| err + " and exceeded maximum retries")
         };
         self.steps.push(Box::new(retry_step_until_ok));
         self
@@ -81,19 +84,40 @@ impl DungeonLayout {
 pub fn add_room(state: &DungeonState) -> Result<DungeonState, String> {
     let mut rng = state.rng.borrow_mut();
 
+    let width = rng.gen_range(6..16);
+    let height = rng.gen_range(6..16);
+
+    let position = if let Some(corridor) = state.layout.corridors.last() {
+        let joining_corridor_pos = corridor.position
+            + IVec2::from(corridor.shape.orientation) * (corridor.shape.length as i32 - 1);
+
+        let (x, y) = match corridor.shape.orientation {
+            DOWN => (rng.gen_range(1..(width - 1)), height),
+            UP => (rng.gen_range(1..(width - 1)), 0),
+            LEFT => (width, rng.gen_range(1..(height - 1))),
+            RIGHT => (0, rng.gen_range(1..(height - 1))),
+        };
+
+        joining_corridor_pos - IVec2::new(x as i32, y as i32)
+    } else {
+        IVec2::new(rng.gen_range(20..25), rng.gen_range(20..25))
+    };
+
     let room = Room {
-        shape: Rectangle {
-            width: rng.gen_range(6..16),
-            height: rng.gen_range(6..16),
-        },
-        position: IVec2::new(rng.gen_range(0..60), rng.gen_range(0..30)),
+        shape: Rectangle { width, height },
+        position,
     };
 
     let mut rooms = state.layout.rooms.clone();
 
     let disjoint_rooms = rooms.iter().all(|r| !r.collides_with(&room));
+    let disjoint_from_corridors = state
+        .layout
+        .corridors
+        .iter()
+        .all(|c| !c.collides_with(&room));
 
-    if disjoint_rooms {
+    if disjoint_rooms && disjoint_from_corridors {
         rooms.push(room);
 
         return Ok(DungeonState {
@@ -126,20 +150,22 @@ pub fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
         let width = room.shape.width - 1;
         let height = room.shape.height - 1;
 
-        match orientation {
+        let offset = match orientation {
             UP => IVec2::new(rng.gen_range(1..width) as i32, height as i32),
             DOWN => IVec2::new(rng.gen_range(1..width) as i32, 0),
             RIGHT => IVec2::new(width as i32, rng.gen_range(1..height) as i32),
             LEFT => IVec2::new(0, rng.gen_range(1..height) as i32),
-        }
+        };
+
+        offset + room.position
     } else {
-        IVec2::new(rng.gen_range(0..30), rng.gen_range(0..30))
+        IVec2::new(0, 0)
     };
 
     let corridor = Corridor {
         shape: IShape {
             orientation,
-            length: rng.gen_range(3..10),
+            length: rng.gen_range(3..12),
         },
         position,
     };
@@ -147,8 +173,13 @@ pub fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
     let mut corridors = state.layout.corridors.clone();
 
     let disjoint_from_corridors = corridors.iter().all(|c| !c.collides_with(&corridor));
+    let disjoint_from_rooms = state
+        .layout
+        .rooms
+        .iter()
+        .all(|r| !r.collides_with(&corridor));
 
-    if disjoint_from_corridors {
+    if disjoint_from_corridors && disjoint_from_rooms {
         corridors.push(corridor);
         return Ok(DungeonState {
             layout: DungeonLayout {

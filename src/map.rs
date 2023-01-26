@@ -46,6 +46,7 @@ pub struct ChunkManager {
 #[derive(Component, Debug)]
 pub struct MapSpawner {
     pub respawn_map: bool,
+    pub generate_next_step: bool,
 }
 
 pub fn respawn_map_input_system(
@@ -55,6 +56,10 @@ pub fn respawn_map_input_system(
     let mut spawner = query.single_mut();
 
     if keyboard_input.clear_just_pressed(KeyCode::Space) {
+        spawner.generate_next_step = true;
+    }
+
+    if keyboard_input.clear_just_pressed(KeyCode::Back) {
         spawner.respawn_map = true;
     }
 }
@@ -76,28 +81,29 @@ fn get_tile_map(layout: &DungeonLayout) -> TileMap {
                 }
             }
         }
-        for corridor in &layout.corridors {
-            let pos = &corridor.position;
-            let shape = &corridor.shape;
+    }
 
-            let x_offset = pos.x;
-            let y_offset = pos.y;
+    for corridor in &layout.corridors {
+        let pos = &corridor.position;
+        let shape = &corridor.shape;
 
-            let length = shape.length;
+        let x_offset = pos.x;
+        let y_offset = pos.y;
 
-            let dir: IVec2 = shape.orientation.into();
+        let length = shape.length;
 
-            let perp1 = dir.perp();
+        let dir: IVec2 = shape.orientation.into();
 
-            for i in 0..(length + 1) {
-                let x = x_offset + (i as i32) * dir.x;
-                let y = y_offset + (i as i32) * dir.y;
+        let perp1 = dir.perp();
 
-                let floor_pos = IVec2::new(x, y);
-                tile_map.set(floor_pos, TileType::Floor);
-                tile_map.set(floor_pos + perp1, TileType::Wall);
-                tile_map.set(floor_pos - perp1, TileType::Wall);
-            }
+        for i in 0..length {
+            let x = x_offset + (i as i32) * dir.x;
+            let y = y_offset + (i as i32) * dir.y;
+
+            let floor_pos = IVec2::new(x, y);
+            tile_map.set(floor_pos, TileType::Floor);
+            tile_map.set(floor_pos + perp1, TileType::Wall);
+            tile_map.set(floor_pos - perp1, TileType::Wall);
         }
     }
 
@@ -148,7 +154,10 @@ pub fn run_if_map_respawned(spawner_query: Query<&MapSpawner>) -> ShouldRun {
 }
 
 pub fn create_map_spawner(mut commands: Commands) {
-    commands.spawn(MapSpawner { respawn_map: false });
+    commands.spawn(MapSpawner {
+        respawn_map: false,
+        generate_next_step: false,
+    });
 }
 
 pub fn spawn_map(
@@ -157,7 +166,9 @@ pub fn spawn_map(
     mut chunk_manager: ResMut<ChunkManager>,
 ) {
     let generator = DungeonGenerator::new()
-        .add_step(add_room)
+        .add_retryable_step(add_room)
+        .add_retryable_step(add_corridor)
+        .add_retryable_step(add_room)
         .add_retryable_step(add_corridor)
         .add_retryable_step(add_room);
 

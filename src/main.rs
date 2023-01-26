@@ -3,11 +3,7 @@ mod map;
 mod movement;
 mod player;
 
-use bevy::{
-    diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin},
-    prelude::*,
-    time::FixedTimestep,
-};
+use bevy::{prelude::*, time::FixedTimestep};
 use bevy_ecs_tilemap::prelude::*;
 use map::{
     create_map_spawner, despawn_map, respawn_map_input_system, run_if_map_respawned, ChunkManager,
@@ -41,8 +37,6 @@ impl Plugin for SetupPlugin {
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(SetupPlugin)
         .add_system(bevy::window::close_on_esc)
         .add_plugin(TilemapPlugin)
