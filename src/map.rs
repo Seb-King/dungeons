@@ -154,9 +154,13 @@ pub fn despawn_chunks_far_away(
         let x_distance = (transform.translation.x - chunk_transform.translation.x) as i32;
         let y_distance = (transform.translation.y - chunk_transform.translation.y) as i32;
         if x_distance.abs() > (SCREEN_WIDTH as i32) || y_distance.abs() > (SCREEN_HEIGHT as i32) {
-            chunk_manager
-                .spawned_chunks
-                .remove(&IVec2::new(x_distance / 16, y_distance / 16));
+            let chunk_pos = IVec2::new(
+                chunk_transform.translation.x as i32 / 16,
+                chunk_transform.translation.y as i32 / 16,
+            );
+
+            chunk_manager.spawned_chunks.remove(&chunk_pos);
+
             commands.entity(entity).despawn_recursive();
         }
     }
