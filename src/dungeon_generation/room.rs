@@ -1,4 +1,4 @@
-use crate::dungeon_generation::room::Orientation::{DOWN, RIGHT, UP};
+use crate::dungeon_generation::room::Orientation::{DOWN, LEFT, RIGHT, UP};
 use bevy::math::IVec2;
 
 #[derive(Clone, Copy, Debug)]

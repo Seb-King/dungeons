@@ -74,7 +74,7 @@ fn get_tile_map(layout: &DungeonLayout) -> TileMap {
             for x in 0..room.shape.width {
                 let on_border =
                     y == 0 || y == room.shape.height - 1 || x == 0 || x == room.shape.width - 1;
-                let pos = IVec2::new((x as i32 + room.position.x), (y as i32 + room.position.y));
+                let pos = IVec2::new(x as i32 + room.position.x, y as i32 + room.position.y);
                 if on_border {
                     tile_map.set(pos, TileType::Wall);
                 } else {
@@ -170,7 +170,7 @@ pub fn despawn_map(
     mut spawner_query: Query<&mut MapSpawner>,
     chunks_query: Query<Entity, With<TilemapType>>,
     chunk_manager: ResMut<ChunkManager>,
-    mut commands: Commands,
+    commands: Commands,
 ) {
     let mut map_spawner = spawner_query.single_mut();
 
@@ -209,7 +209,7 @@ pub fn create_map_spawner(mut commands: Commands) {
 
 pub fn spawn_map(mut commands: Commands) {
     let generator = DungeonGenerator::new()
-        .add_retryable_step(add_room)
+        .add_step(add_room)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
