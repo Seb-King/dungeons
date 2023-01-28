@@ -4,8 +4,10 @@ mod map;
 mod movement;
 mod player;
 
+use crate::camera::setup_camera;
 use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera};
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
+use bevy::window::close_on_esc;
 use bevy::{prelude::*, time::FixedTimestep};
 use bevy_ecs_tilemap::prelude::*;
 use camera::pan_camera;
@@ -15,43 +17,28 @@ use map::{
 use movement::{move_entities, player_input_system};
 
 const TIME_STEP: f32 = 1.0 / 60.0;
-
 const SCREEN_WIDTH: u32 = 1280;
 const SCREEN_HEIGHT: u32 = 720;
-
-fn startup(mut commands: Commands) {
-    commands.spawn(Camera2dBundle {
-        transform: Transform::from_xyz(
-            (SCREEN_WIDTH / 2) as f32 - 8.0,
-            (SCREEN_HEIGHT / 2) as f32 - 8.0,
-            999.9,
-        ),
-        ..default()
-    });
-}
-
-struct SetupPlugin;
-
-impl Plugin for SetupPlugin {
-    fn build(&self, app: &mut App) {
-        app.add_startup_system(startup);
-    }
-}
 
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(SetupPlugin)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
-        .add_system(bevy::window::close_on_esc)
         .add_plugin(TilemapPlugin)
-        .add_startup_system(map::spawn_map)
-        .add_startup_system(player::add_player)
-        .add_startup_system(create_map_spawner)
-        .add_system(player_input_system)
-        .add_system(respawn_map_input_system)
-        .insert_resource(ChunkManager::default())
+        .add_startup_system_set(
+            SystemSet::new()
+                .with_system(setup_camera)
+                .with_system(map::spawn_map)
+                .with_system(player::add_player)
+                .with_system(create_map_spawner),
+        )
+        .add_system_set(
+            SystemSet::new()
+                .with_system(close_on_esc)
+                .with_system(player_input_system)
+                .with_system(respawn_map_input_system),
+        )
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_if_map_respawned)
@@ -71,5 +58,6 @@ fn main() {
                 .with_system(despawn_chunks_far_away)
                 .with_system(pan_camera),
         )
+        .insert_resource(ChunkManager::default())
         .run();
 }
