@@ -1,3 +1,4 @@
+mod camera;
 mod dungeon_generation;
 mod map;
 mod movement;
@@ -7,6 +8,7 @@ use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera};
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::{prelude::*, time::FixedTimestep};
 use bevy_ecs_tilemap::prelude::*;
+use camera::pan_camera;
 use map::{
     create_map_spawner, despawn_map, respawn_map_input_system, run_if_map_respawned, ChunkManager,
 };
@@ -66,7 +68,8 @@ fn main() {
                 .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
                 .with_system(move_entities)
                 .with_system(spawn_chunks_around_camera)
-                .with_system(despawn_chunks_far_away),
+                .with_system(despawn_chunks_far_away)
+                .with_system(pan_camera),
         )
         .run();
 }

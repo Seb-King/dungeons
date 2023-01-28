@@ -164,32 +164,24 @@ pub fn despawn_chunks_far_away(
 
 pub fn despawn_map(
     mut spawner_query: Query<&mut MapSpawner>,
-    chunks_query: Query<Entity, With<TilemapId>>,
-    tilemap_query: Query<Entity, With<TileStorage>>,
-    mut chunk_manager: ResMut<ChunkManager>,
+    chunks_query: Query<Entity, With<TilemapType>>,
+    chunk_manager: ResMut<ChunkManager>,
     mut commands: Commands,
 ) {
     let mut map_spawner = spawner_query.single_mut();
 
-    despawn_all_chunks(chunks_query, tilemap_query, chunk_manager, commands);
+    despawn_all_chunks(chunks_query, chunk_manager, commands);
     map_spawner.respawn_map = false;
 }
 
 pub fn despawn_all_chunks(
-    chunks_query: Query<Entity, With<TilemapId>>,
-    tilemap_query: Query<Entity, With<TileStorage>>,
+    chunks_query: Query<Entity, With<TilemapType>>,
     mut chunk_manager: ResMut<ChunkManager>,
     mut commands: Commands,
 ) {
-    let mut manager = chunk_manager.as_mut();
-
-    manager.spawned_chunks.clear();
+    chunk_manager.spawned_chunks.clear();
 
     for entity in chunks_query.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-
-    for entity in tilemap_query.iter() {
         commands.entity(entity).despawn_recursive();
     }
 }
