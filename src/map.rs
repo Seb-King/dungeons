@@ -1,6 +1,7 @@
 use crate::dungeon_generation::dungeon_generator::{
-    add_corridor, add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
+    add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
 };
+use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use bevy::utils::HashMap;
 use bevy::{ecs::schedule::ShouldRun, prelude::*, utils::HashSet};
 use bevy_ecs_tilemap::prelude::*;
@@ -110,6 +111,57 @@ fn get_tile_map(layout: &DungeonLayout) -> TileMap {
     return tile_map;
 }
 
+pub fn spawn_chunks_around_camera(
+    mut commands: Commands,
+    camera_query: Query<&Transform, With<Camera2d>>,
+    tile_map: Res<TileMap>,
+    asset_server: Res<AssetServer>,
+    mut chunk_manager: ResMut<ChunkManager>,
+) {
+    let transform = camera_query.get_single().unwrap();
+
+    let x_offset = transform.translation.x as i32 / CHUNK_SIZE.x as i32 / 16;
+    let y_offset = transform.translation.y as i32 / CHUNK_SIZE.y as i32 / 16;
+
+    for x in (-6)..(7) as i32 {
+        for y in (-4)..(5) as i32 {
+            let chunk_pos = IVec2::new(
+                (x_offset + x) * (CHUNK_SIZE.x as i32),
+                (y_offset + y) * (CHUNK_SIZE.y as i32),
+            );
+
+            let chunk = chunk_manager.spawned_chunks.get(&chunk_pos);
+
+            if chunk.is_none() {
+                chunk_manager
+                    .spawned_chunks
+                    .insert(IVec2::new(chunk_pos.x, chunk_pos.y));
+                spawn_chunk(&tile_map, chunk_pos, &mut commands, &asset_server);
+            }
+        }
+    }
+}
+
+pub fn despawn_chunks_far_away(
+    mut commands: Commands,
+    chunks_query: Query<(Entity, &Transform), With<TilemapType>>,
+    camera_query: Query<&Transform, With<Camera2d>>,
+    mut chunk_manager: ResMut<ChunkManager>,
+) {
+    let transform = camera_query.get_single().unwrap();
+
+    for (entity, chunk_transform) in chunks_query.iter() {
+        let x_distance = (transform.translation.x - chunk_transform.translation.x) as i32;
+        let y_distance = (transform.translation.y - chunk_transform.translation.y) as i32;
+        if x_distance.abs() > (SCREEN_WIDTH as i32) || y_distance.abs() > (SCREEN_HEIGHT as i32) {
+            chunk_manager
+                .spawned_chunks
+                .remove(&IVec2::new(x_distance / 16, y_distance / 16));
+            commands.entity(entity).despawn_recursive();
+        }
+    }
+}
+
 pub fn despawn_map(
     mut spawner_query: Query<&mut MapSpawner>,
     chunks_query: Query<Entity, With<TilemapId>>,
@@ -129,11 +181,10 @@ pub fn despawn_all_chunks(
     mut chunk_manager: ResMut<ChunkManager>,
     mut commands: Commands,
 ) {
-    let manager = chunk_manager.as_mut();
-    *manager = ChunkManager::default();
-    // for value in chunk_manager.as_mut().spawned_chunks.iter() {
-    //     chunk_manager.spawned_chunks.remove(value);
-    // }
+    let mut manager = chunk_manager.as_mut();
+
+    manager.spawned_chunks.clear();
+
     for entity in chunks_query.iter() {
         commands.entity(entity).despawn_recursive();
     }
@@ -160,11 +211,7 @@ pub fn create_map_spawner(mut commands: Commands) {
     });
 }
 
-pub fn spawn_map(
-    mut commands: Commands,
-    asset_server: Res<AssetServer>,
-    mut chunk_manager: ResMut<ChunkManager>,
-) {
+pub fn spawn_map(mut commands: Commands) {
     let generator = DungeonGenerator::new()
         .add_retryable_step(add_room)
         .add_retryable_step(add_corridor_then_room)
@@ -180,17 +227,6 @@ pub fn spawn_map(
     let dungeon_map = generator.generate();
 
     let tile_map = get_tile_map(&dungeon_map.unwrap());
-
-    for x in (-11)..(11) as i32 {
-        for y in (-11)..(11) as i32 {
-            let chunk_pos = IVec2::new(x * (CHUNK_SIZE.x as i32), y * (CHUNK_SIZE.y as i32));
-
-            chunk_manager
-                .spawned_chunks
-                .insert(IVec2::new(chunk_pos.x, chunk_pos.y));
-            spawn_chunk(&tile_map, chunk_pos, &mut commands, &asset_server);
-        }
-    }
 
     commands.insert_resource(tile_map);
 }
@@ -226,6 +262,7 @@ fn spawn_chunk(
                     tile_type,
                 ))
                 .id();
+            commands.entity(tilemap_entity).add_child(tile_entity);
             tile_storage.set(&tile_pos, tile_entity);
         }
     }

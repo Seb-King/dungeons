@@ -3,6 +3,8 @@ mod map;
 mod movement;
 mod player;
 
+use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera};
+use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::{prelude::*, time::FixedTimestep};
 use bevy_ecs_tilemap::prelude::*;
 use map::{
@@ -38,6 +40,8 @@ fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
         .add_plugin(SetupPlugin)
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_system(bevy::window::close_on_esc)
         .add_plugin(TilemapPlugin)
         .add_startup_system(map::spawn_map)
@@ -60,7 +64,9 @@ fn main() {
                         .before(move_entities),
                 )
                 .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-                .with_system(movement::move_entities),
+                .with_system(move_entities)
+                .with_system(spawn_chunks_around_camera)
+                .with_system(despawn_chunks_far_away),
         )
         .run();
 }

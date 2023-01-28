@@ -3,7 +3,7 @@ use bevy::prelude::*;
 use crate::movement;
 
 #[derive(Component)]
-struct Player;
+pub struct Player;
 
 pub fn add_player(mut commands: Commands) {
     let player_x = 1;
