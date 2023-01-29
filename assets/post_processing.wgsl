@@ -89,21 +89,21 @@ fn fragment(
     @builtin(position) position: vec4<f32>,
     #import bevy_sprite::mesh2d_vertex_output
 ) -> @location(0) vec4<f32> {
-let uv = get_uv(position.xy);
-let uv = apply_screen_shape(uv, screen_shape_factor);
+    let uv = get_uv(position.xy);
+    let uv = apply_screen_shape(uv, screen_shape_factor);
 
-let cols = rows * view.viewport.z / view.viewport.w;
+    let cols = rows * view.viewport.z / view.viewport.w;
 
-let texture_uv = uv;
-let texture_uv = pixelate(texture_uv, vec2(cols, rows));
+    let texture_uv = uv;
+    let texture_uv = pixelate(texture_uv, vec2(cols, rows));
 
-let color = get_texture_color(texture_uv);
+    let color = get_texture_color(texture_uv);
 
-let color = apply_pixel_rows(color, uv, rows);
-let color = apply_pixel_cols(color, uv, cols);
+    let color = apply_pixel_rows(color, uv, rows);
+    let color = apply_pixel_cols(color, uv, cols);
 
-let color = apply_brightness(color);
-let color = apply_screen_edges(color, uv);
+    let color = apply_brightness(color);
+    let color = apply_screen_edges(color, uv);
 
-return color;
+    return color;
 }

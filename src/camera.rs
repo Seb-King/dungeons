@@ -11,7 +11,7 @@ use bevy::{
         },
         view::RenderLayers,
     },
-    sprite::{Material2d, Material2dPlugin, MaterialMesh2dBundle},
+    sprite::{Material2d, MaterialMesh2dBundle},
 };
 
 #[derive(Component)]
