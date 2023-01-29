@@ -10,8 +10,8 @@ pub fn place_player_spawn(state: &DungeonState) -> Result<DungeonState, String> 
     if let Some(room) = first_room {
         let mut rng = state.rng.borrow_mut();
 
-        let x = rng.gen_range(1..(room.shape.width)) as i32;
-        let y = rng.gen_range(1..(room.shape.height)) as i32;
+        let x = rng.gen_range(1..(room.shape.width - 1)) as i32;
+        let y = rng.gen_range(1..(room.shape.height - 1)) as i32;
 
         let mut spawns = state.spawns.clone();
         spawns.push(Spawn {
