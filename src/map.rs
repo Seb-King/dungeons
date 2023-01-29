@@ -1,3 +1,4 @@
+use crate::camera::MainCamera;
 use crate::dungeon_generation::dungeon_generator::{
     add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
 };
@@ -113,7 +114,7 @@ fn get_tile_map(layout: &DungeonLayout) -> TileMap {
 
 pub fn spawn_chunks_around_camera(
     mut commands: Commands,
-    camera_query: Query<&Transform, With<Camera2d>>,
+    camera_query: Query<&Transform, With<MainCamera>>,
     tile_map: Res<TileMap>,
     asset_server: Res<AssetServer>,
     mut chunk_manager: ResMut<ChunkManager>,
@@ -145,7 +146,7 @@ pub fn spawn_chunks_around_camera(
 pub fn despawn_chunks_far_away(
     mut commands: Commands,
     chunks_query: Query<(Entity, &Transform), With<TilemapType>>,
-    camera_query: Query<&Transform, With<Camera2d>>,
+    camera_query: Query<&Transform, (With<Camera2d>, With<MainCamera>)>,
     mut chunk_manager: ResMut<ChunkManager>,
 ) {
     let transform = camera_query.get_single().unwrap();

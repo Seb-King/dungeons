@@ -1,3 +1,4 @@
+use crate::camera::MainCamera;
 use crate::map::{TileMap, TileType};
 use bevy::prelude::*;
 
@@ -25,8 +26,8 @@ pub enum Direction {
 }
 
 pub fn move_entities(
-    mut query: Query<(&mut Movement, &mut Transform), Without<Camera2d>>,
-    mut camera_query: Query<&mut Transform, With<Camera2d>>,
+    mut query: Query<(&mut Movement, &mut Transform), (Without<Camera2d>, Without<MainCamera>)>,
+    mut camera_query: Query<&mut Transform, With<MainCamera>>,
 ) {
     let mut camera_transform = camera_query.get_single_mut().unwrap();
 
