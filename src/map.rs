@@ -1,7 +1,11 @@
 use crate::camera::MainCamera;
+use crate::dungeon_generation::dungeon_generator::SpawnType;
 use crate::dungeon_generation::dungeon_generator::{
     add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
 };
+use crate::dungeon_generation::spawn_generation::place_player_spawn;
+use crate::player::Player;
+use crate::spawns::Spawn;
 use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use bevy::utils::HashMap;
 use bevy::{ecs::schedule::ShouldRun, prelude::*, utils::HashSet};
@@ -210,7 +214,8 @@ pub fn create_map_spawner(mut commands: Commands) {
 
 pub fn spawn_map(mut commands: Commands) {
     let generator = DungeonGenerator::new()
-        .add_step(add_room)
+        .add_retryable_step(add_room)
+        .add_retryable_step(place_player_spawn)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
@@ -221,9 +226,21 @@ pub fn spawn_map(mut commands: Commands) {
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room);
 
-    let dungeon_map = generator.generate();
+    let dungeon = generator.generate().unwrap();
 
-    let tile_map = get_tile_map(&dungeon_map.unwrap());
+    let tile_map = get_tile_map(&dungeon.layout);
+
+    for spawn in dungeon.spawns.iter() {
+        if spawn.spawn_type == SpawnType::Player {
+            commands.spawn((
+                Player,
+                Spawn {
+                    position: spawn.position,
+                    spawned: false,
+                },
+            ));
+        }
+    }
 
     commands.insert_resource(tile_map);
 }

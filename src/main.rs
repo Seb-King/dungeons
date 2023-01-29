@@ -3,9 +3,12 @@ mod dungeon_generation;
 mod map;
 mod movement;
 mod player;
+mod spawns;
 
 use crate::camera::{setup_camera, PostProcessingMaterial};
-use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera};
+use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
+use crate::player::{despawn_player, spawn_player};
+use crate::spawns::remove_spawn_points;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::sprite::Material2dPlugin;
 use bevy::window::close_on_esc;
@@ -24,15 +27,15 @@ const SCREEN_HEIGHT: u32 = 720;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        .add_plugin(LogDiagnosticsPlugin::default())
-        .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        // .add_plugin(LogDiagnosticsPlugin::default())
+        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(Material2dPlugin::<PostProcessingMaterial>::default())
         .add_plugin(TilemapPlugin)
         .add_startup_system_set(
             SystemSet::new()
                 .with_system(setup_camera)
-                .with_system(map::spawn_map)
-                .with_system(player::add_player)
+                .with_system(spawn_map)
+                .with_system(spawn_player.after(spawn_map))
                 .with_system(create_map_spawner),
         )
         .add_system_set(
@@ -44,8 +47,10 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_if_map_respawned)
-                .with_system(despawn_map.before(map::spawn_map))
-                .with_system(map::spawn_map),
+                .with_system(remove_spawn_points.before(spawn_map))
+                .with_system(despawn_player.before(spawn_map))
+                .with_system(despawn_map.before(spawn_map))
+                .with_system(spawn_map),
         )
         .add_system_set(
             SystemSet::new()
@@ -58,7 +63,8 @@ fn main() {
                 .with_system(move_entities)
                 .with_system(spawn_chunks_around_camera)
                 .with_system(despawn_chunks_far_away)
-                .with_system(pan_camera),
+                .with_system(pan_camera)
+                .with_system(spawn_player),
         )
         .insert_resource(ChunkManager::default())
         .run();
