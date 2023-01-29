@@ -7,8 +7,9 @@ use std::cell::RefCell;
 use std::rc::Rc;
 
 pub struct DungeonState {
-    layout: DungeonLayout,
-    rng: Rc<RefCell<ThreadRng>>,
+    pub layout: DungeonLayout,
+    pub spawns: Vec<Spawn>,
+    pub(crate) rng: Rc<RefCell<ThreadRng>>,
 }
 
 #[derive(Clone, Debug)]
@@ -19,6 +20,17 @@ pub struct DungeonLayout {
 
 pub struct DungeonGenerator {
     steps: Vec<BoxedStep<DungeonState>>,
+}
+
+#[derive(Clone, Debug)]
+pub struct Spawn {
+    pub position: IVec2,
+    pub spawn_type: SpawnType,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum SpawnType {
+    Player,
 }
 
 trait Generator<T, Params> {
@@ -35,11 +47,12 @@ impl DungeonGenerator {
         DungeonGenerator { steps: Vec::new() }
     }
 
-    pub fn generate(&self) -> Result<DungeonLayout, String> {
+    pub fn generate(&self) -> Result<DungeonState, String> {
         let layout = DungeonLayout::new();
 
         let state = DungeonState {
             layout,
+            spawns: Vec::new(),
             rng: Rc::new(RefCell::new(rand::thread_rng())),
         };
 
@@ -48,7 +61,7 @@ impl DungeonGenerator {
             .iter()
             .try_fold(state, |result, step| step(&result));
 
-        return new_state.map(|final_state| final_state.layout);
+        return new_state;
     }
 
     pub fn add_step(mut self, step: Step<DungeonState>) -> Self {
@@ -125,6 +138,7 @@ pub fn add_room(state: &DungeonState) -> Result<DungeonState, String> {
                 rooms,
                 corridors: state.layout.corridors.clone(),
             },
+            spawns: state.spawns.clone(),
             rng: Rc::clone(&state.rng),
         });
     }
@@ -186,6 +200,7 @@ pub fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
                 rooms: state.layout.rooms.clone(),
                 corridors,
             },
+            spawns: state.spawns.clone(),
             rng: Rc::clone(&state.rng),
         });
     }
@@ -205,7 +220,7 @@ mod dungeon_builder_tests {
     fn add_room_works() {
         let builder = DungeonGenerator::new().add_step(add_room);
 
-        assert_eq!(builder.generate().unwrap().rooms.len(), 1);
+        assert_eq!(builder.generate().unwrap().layout.rooms.len(), 1);
     }
 
     #[test]
@@ -214,7 +229,7 @@ mod dungeon_builder_tests {
             .add_step(add_room)
             .add_step(add_room);
 
-        assert_eq!(builder.generate().unwrap().rooms.len(), 2);
+        assert_eq!(builder.generate().unwrap().layout.rooms.len(), 2);
     }
 
     #[test]
@@ -224,7 +239,7 @@ mod dungeon_builder_tests {
             .add_step(add_room)
             .add_step(add_room);
 
-        assert_eq!(builder.generate().unwrap().rooms.len(), 3);
+        assert_eq!(builder.generate().unwrap().layout.rooms.len(), 3);
     }
 
     #[test]
@@ -233,7 +248,7 @@ mod dungeon_builder_tests {
             .add_retryable_step(add_room)
             .add_retryable_step(add_room);
 
-        assert_eq!(builder.generate().unwrap().rooms.len(), 2);
+        assert_eq!(builder.generate().unwrap().layout.rooms.len(), 2);
     }
 
     #[test]
@@ -245,7 +260,7 @@ mod dungeon_builder_tests {
             .add_retryable_step(add_room)
             .add_retryable_step(add_room);
 
-        let dungeon = builder.generate().unwrap();
+        let dungeon = builder.generate().unwrap().layout;
 
         assert_eq!(dungeon.rooms.len(), 5);
     }
@@ -254,8 +269,10 @@ mod dungeon_builder_tests {
     fn add_corridor_works() {
         let builder = DungeonGenerator::new().add_step(add_corridor);
 
-        assert_eq!(builder.generate().unwrap().rooms.len(), 0);
-        assert_eq!(builder.generate().unwrap().corridors.len(), 1);
+        let layout = builder.generate().unwrap().layout;
+
+        assert_eq!(layout.rooms.len(), 0);
+        assert_eq!(layout.corridors.len(), 1);
     }
 
     #[test]
@@ -264,7 +281,10 @@ mod dungeon_builder_tests {
             .add_step(add_room)
             .add_step(add_corridor);
 
-        assert_eq!(builder.generate().unwrap().rooms.len(), 1);
-        assert_eq!(builder.generate().unwrap().corridors.len(), 1);
+        let result = builder.generate();
+
+        assert_eq!(result.is_ok(), true);
+        assert_eq!(result.unwrap().layout.rooms.len(), 1);
+        assert_eq!(result.unwrap().layout.corridors.len(), 1);
     }
 }

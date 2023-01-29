@@ -1,7 +1,11 @@
+use crate::dungeon_generation::dungeon_generator::SpawnType;
 use crate::dungeon_generation::dungeon_generator::{
     add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
 };
-use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
+use crate::dungeon_generation::spawn_generation::place_player_spawn;
+use crate::player::Player;
+use crate::spawns::Spawn;
+use crate::{movement, SCREEN_HEIGHT, SCREEN_WIDTH};
 use bevy::utils::HashMap;
 use bevy::{ecs::schedule::ShouldRun, prelude::*, utils::HashSet};
 use bevy_ecs_tilemap::prelude::*;
@@ -21,10 +25,6 @@ pub struct TileMap {
 }
 
 impl TileMap {
-    pub fn new(map: HashMap<IVec2, TileType>) -> TileMap {
-        TileMap { tile_map: map }
-    }
-
     pub fn get(&self, pos: IVec2) -> TileType {
         let tile_option = self.tile_map.get(&pos);
         if let Some(tile) = tile_option {
@@ -66,8 +66,7 @@ pub fn respawn_map_input_system(
 }
 
 fn get_tile_map(layout: &DungeonLayout) -> TileMap {
-    let grid: HashMap<IVec2, TileType> = HashMap::new();
-    let mut tile_map = TileMap::new(grid);
+    let mut tile_map = TileMap::default();
 
     for room in &layout.rooms {
         for y in 0..room.shape.height {
@@ -210,6 +209,7 @@ pub fn create_map_spawner(mut commands: Commands) {
 pub fn spawn_map(mut commands: Commands) {
     let generator = DungeonGenerator::new()
         .add_step(add_room)
+        .add_retryable_step(place_player_spawn)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
@@ -220,9 +220,46 @@ pub fn spawn_map(mut commands: Commands) {
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room);
 
-    let dungeon_map = generator.generate();
+    let dungeon = generator.generate().unwrap();
 
-    let tile_map = get_tile_map(&dungeon_map.unwrap());
+    let tile_map = get_tile_map(&dungeon.layout);
+
+    for spawn in dungeon.spawns.iter() {
+        if spawn.spawn_type == SpawnType::Player {
+            commands.spawn((
+                Player,
+                Spawn {
+                    position: spawn.position,
+                },
+            ));
+
+            commands.spawn((
+                Player,
+                movement::Controllable,
+                movement::Movement {
+                    direction: movement::Direction::None,
+                    position: movement::Position {
+                        x: spawn.position.x,
+                        y: spawn.position.y,
+                    },
+                },
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgb(0.1, 1.0, 1.0),
+                        custom_size: Some(Vec2::new(16.0, 16.0)),
+                        ..default()
+                    },
+                    transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, 0.0))
+                        .with_translation(Vec3::new(
+                            spawn.position.x as f32 * 16.0,
+                            spawn.position.y as f32 * 16.0,
+                            1.0,
+                        )),
+                    ..default()
+                },
+            ));
+        }
+    }
 
     commands.insert_resource(tile_map);
 }

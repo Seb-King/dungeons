@@ -3,9 +3,11 @@ mod dungeon_generation;
 mod map;
 mod movement;
 mod player;
+mod spawns;
 
 use crate::camera::setup_camera;
-use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera};
+use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
+use crate::player::{despawn_player, spawn_player};
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::window::close_on_esc;
 use bevy::{prelude::*, time::FixedTimestep};
@@ -29,8 +31,8 @@ fn main() {
         .add_startup_system_set(
             SystemSet::new()
                 .with_system(setup_camera)
-                .with_system(map::spawn_map)
-                .with_system(player::add_player)
+                .with_system(spawn_map)
+                .with_system(spawn_player.after(spawn_map))
                 .with_system(create_map_spawner),
         )
         .add_system_set(
@@ -42,17 +44,19 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_if_map_respawned)
-                .with_system(despawn_map.before(map::spawn_map))
-                .with_system(map::spawn_map),
+                .with_system(despawn_player.before(spawn_map))
+                .with_system(despawn_map.before(spawn_map))
+                .with_system(spawn_map)
+                .with_system(spawn_player.after(spawn_map)),
         )
         .add_system_set(
             SystemSet::new()
+                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
                 .with_system(
                     movement::check_collisions
                         .after(player_input_system)
                         .before(move_entities),
                 )
-                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
                 .with_system(move_entities)
                 .with_system(spawn_chunks_around_camera)
                 .with_system(despawn_chunks_far_away)

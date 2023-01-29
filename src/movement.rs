@@ -84,21 +84,21 @@ pub fn player_input_system(
     mut keyboard_input: ResMut<Input<KeyCode>>,
     mut query: Query<&mut Movement, With<Controllable>>,
 ) {
-    let mut movement = query.single_mut();
+    if let Ok(mut movement) = query.get_single_mut() {
+        if keyboard_input.clear_just_pressed(KeyCode::Up) {
+            movement.direction = Direction::Up;
+        }
 
-    if keyboard_input.clear_just_pressed(KeyCode::Up) {
-        movement.direction = Direction::Up;
-    }
+        if keyboard_input.clear_just_pressed(KeyCode::Down) {
+            movement.direction = Direction::Down;
+        }
 
-    if keyboard_input.clear_just_pressed(KeyCode::Down) {
-        movement.direction = Direction::Down;
-    }
+        if keyboard_input.clear_just_pressed(KeyCode::Right) {
+            movement.direction = Direction::Right;
+        }
 
-    if keyboard_input.clear_just_pressed(KeyCode::Right) {
-        movement.direction = Direction::Right;
-    }
-
-    if keyboard_input.clear_just_pressed(KeyCode::Left) {
-        movement.direction = Direction::Left;
+        if keyboard_input.clear_just_pressed(KeyCode::Left) {
+            movement.direction = Direction::Left;
+        }
     }
 }
