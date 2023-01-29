@@ -1,4 +1,5 @@
 use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
+use bevy::core_pipeline::clear_color::ClearColorConfig;
 use bevy::input::mouse::MouseMotion;
 use bevy::{
     prelude::*,
@@ -52,6 +53,9 @@ pub fn setup_camera(
     let image_handle = images.add(image);
     commands.spawn((
         Camera2dBundle {
+            camera_2d: Camera2d {
+                clear_color: ClearColorConfig::Custom(Color::rgb(0.0, 0.0, 0.0)),
+            },
             transform: Transform::from_xyz(
                 (SCREEN_WIDTH / 2) as f32 - 8.0,
                 (SCREEN_HEIGHT / 2) as f32 - 8.0,
@@ -98,6 +102,9 @@ pub fn setup_camera(
 
     commands.spawn((
         Camera2dBundle {
+            camera_2d: Camera2d {
+                clear_color: ClearColorConfig::Custom(Color::rgb(0.0, 0.0, 0.0)),
+            },
             camera: Camera {
                 priority: 1,
                 ..default()
@@ -111,7 +118,7 @@ pub fn setup_camera(
 pub fn pan_camera(
     mut ev_motion: EventReader<MouseMotion>,
     input_mouse: Res<Input<MouseButton>>,
-    mut query: Query<&mut Transform, With<Camera2d>>,
+    mut query: Query<&mut Transform, With<MainCamera>>,
 ) {
     let pan_button = MouseButton::Left;
 

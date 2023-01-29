@@ -7,6 +7,7 @@ mod spawns;
 
 use crate::camera::{setup_camera, PostProcessingMaterial};
 use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
+use crate::movement::check_collisions;
 use crate::player::{despawn_player, spawn_player};
 use crate::spawns::remove_spawn_points;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
@@ -27,8 +28,8 @@ const SCREEN_HEIGHT: u32 = 720;
 fn main() {
     App::new()
         .add_plugins(DefaultPlugins)
-        // .add_plugin(LogDiagnosticsPlugin::default())
-        // .add_plugin(FrameTimeDiagnosticsPlugin::default())
+        .add_plugin(LogDiagnosticsPlugin::default())
+        .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(Material2dPlugin::<PostProcessingMaterial>::default())
         .add_plugin(TilemapPlugin)
         .add_startup_system_set(
@@ -54,12 +55,8 @@ fn main() {
         )
         .add_system_set(
             SystemSet::new()
-                .with_system(
-                    movement::check_collisions
-                        .after(player_input_system)
-                        .before(move_entities),
-                )
                 .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
+                .with_system(check_collisions.before(move_entities))
                 .with_system(move_entities)
                 .with_system(spawn_chunks_around_camera)
                 .with_system(despawn_chunks_far_away)
