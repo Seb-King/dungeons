@@ -1,5 +1,9 @@
-use bevy::math::IVec2;
-use bevy::prelude::{Commands, Component, DespawnRecursiveExt, Entity, Query, With};
+use crate::dungeon_generation::key::Key;
+use bevy::math::{IVec2, Quat};
+use bevy::prelude::{
+    default, Added, Color, Commands, Component, DespawnRecursiveExt, Entity, Query, Sprite,
+    SpriteBundle, Transform, Vec2, Vec3, With,
+};
 
 #[derive(Component)]
 pub struct Spawn {
@@ -10,5 +14,33 @@ pub struct Spawn {
 pub fn remove_spawn_points(mut commands: Commands, spawns_query: Query<Entity, With<Spawn>>) {
     if let Ok(entity) = spawns_query.get_single() {
         commands.entity(entity).despawn_recursive();
+    }
+}
+
+pub fn spawn_key(mut commands: Commands, mut key_spawn_query: Query<&mut Spawn, Added<Key>>) {
+    if let Ok(mut spawn) = key_spawn_query.get_single_mut() {
+        if !spawn.spawned {
+            spawn.spawned = true;
+
+            let translation = Vec3::new(
+                spawn.position.x as f32 * 16.0,
+                spawn.position.y as f32 * 16.0,
+                1.0,
+            );
+
+            commands.spawn((
+                Key,
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgb(1.0, 1.0, 0.4),
+                        custom_size: Some(Vec2::new(16.0, 16.0)),
+                        ..default()
+                    },
+                    transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, 0.0))
+                        .with_translation(translation),
+                    ..default()
+                },
+            ));
+        }
     }
 }

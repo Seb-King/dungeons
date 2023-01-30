@@ -31,6 +31,7 @@ pub struct Spawn {
 #[derive(Clone, Debug, PartialEq)]
 pub enum SpawnType {
     Player,
+    Key,
 }
 
 trait Generator<T, Params> {

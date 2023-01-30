@@ -3,6 +3,7 @@ use crate::dungeon_generation::dungeon_generator::SpawnType;
 use crate::dungeon_generation::dungeon_generator::{
     add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
 };
+use crate::dungeon_generation::key::{add_key, Key};
 use crate::dungeon_generation::spawn_generation::place_player_spawn;
 use crate::player::Player;
 use crate::spawns::Spawn;
@@ -224,21 +225,33 @@ pub fn spawn_map(mut commands: Commands) {
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
-        .add_retryable_step(add_corridor_then_room);
+        .add_retryable_step(add_corridor_then_room)
+        .add_retryable_step(add_key);
 
     let dungeon = generator.generate().unwrap();
 
     let tile_map = get_tile_map(&dungeon.layout);
 
     for spawn in dungeon.spawns.iter() {
-        if spawn.spawn_type == SpawnType::Player {
-            commands.spawn((
-                Player,
-                Spawn {
-                    position: spawn.position,
-                    spawned: false,
-                },
-            ));
+        match spawn.spawn_type {
+            SpawnType::Player => {
+                commands.spawn((
+                    Player,
+                    Spawn {
+                        position: spawn.position,
+                        spawned: false,
+                    },
+                ));
+            }
+            SpawnType::Key => {
+                commands.spawn((
+                    Key,
+                    Spawn {
+                        position: spawn.position,
+                        spawned: false,
+                    },
+                ));
+            }
         }
     }
 
