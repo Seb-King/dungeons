@@ -1,5 +1,5 @@
 use crate::dungeon_generation::dungeon_generator::{DungeonLayout, DungeonState, Spawn, SpawnType};
-use bevy::prelude::{Component, IVec2};
+use bevy::prelude::{Component, Entity, IVec2, Query, With};
 use rand::Rng;
 use std::rc::Rc;
 
@@ -9,7 +9,10 @@ pub struct Key;
 pub fn add_key(state: &DungeonState) -> Result<DungeonState, String> {
     let mut rng = state.rng.borrow_mut();
 
-    if let Some(room) = state.layout.rooms.get(0) {
+    let index = rng.gen_range(0..state.layout.rooms.len());
+    let random_room = state.layout.rooms.get(index);
+
+    if let Some(room) = random_room {
         let x = rng.gen_range(1..(room.shape.width - 1)) as i32;
         let y = rng.gen_range(1..(room.shape.height - 1)) as i32;
 

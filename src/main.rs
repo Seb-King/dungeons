@@ -7,8 +7,8 @@ mod spawns;
 
 use crate::camera::{setup_camera, PostProcessingMaterial};
 use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
-use crate::player::{despawn_player, spawn_player};
-use crate::spawns::{remove_spawn_points, spawn_key};
+use crate::player::spawn_player;
+use crate::spawns::{despawn_objects, remove_spawn_points, spawn_key};
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::sprite::Material2dPlugin;
 use bevy::window::close_on_esc;
@@ -51,7 +51,7 @@ fn main() {
     let spawning_system = SystemSet::new()
         .with_run_criteria(run_if_map_respawned)
         .with_system(remove_spawn_points)
-        .with_system(despawn_player)
+        .with_system(despawn_objects)
         .with_system(despawn_map)
         .with_system(spawn_map);
 

@@ -50,9 +50,3 @@ pub fn spawn_player(
         }
     }
 }
-
-pub fn despawn_player(mut commands: Commands, player_query: Query<Entity, With<Player>>) {
-    for entity in player_query.iter() {
-        commands.entity(entity).despawn_recursive();
-    }
-}

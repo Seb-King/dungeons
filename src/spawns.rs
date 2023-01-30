@@ -1,7 +1,8 @@
 use crate::dungeon_generation::key::Key;
+use crate::player::Player;
 use bevy::math::{IVec2, Quat};
 use bevy::prelude::{
-    default, Added, Color, Commands, Component, DespawnRecursiveExt, Entity, Query, Sprite,
+    default, Added, Color, Commands, Component, DespawnRecursiveExt, Entity, Or, Query, Sprite,
     SpriteBundle, Transform, Vec2, Vec3, With,
 };
 
@@ -42,5 +43,14 @@ pub fn spawn_key(mut commands: Commands, mut key_spawn_query: Query<&mut Spawn, 
                 },
             ));
         }
+    }
+}
+
+pub fn despawn_objects(
+    mut commands: Commands,
+    player_query: Query<Entity, Or<(With<Player>, With<Key>)>>,
+) {
+    for entity in player_query.iter() {
+        commands.entity(entity).despawn_recursive();
     }
 }
