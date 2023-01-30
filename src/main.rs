@@ -25,41 +25,47 @@ const SCREEN_WIDTH: u32 = 1280;
 const SCREEN_HEIGHT: u32 = 720;
 
 fn main() {
-    App::new()
-        .add_plugins(DefaultPlugins)
+    let mut app = App::new();
+
+    app.add_plugins(DefaultPlugins)
         .add_plugin(LogDiagnosticsPlugin::default())
         .add_plugin(FrameTimeDiagnosticsPlugin::default())
         .add_plugin(Material2dPlugin::<PostProcessingMaterial>::default())
-        .add_plugin(TilemapPlugin)
-        .add_startup_system_set(
-            SystemSet::new()
-                .with_system(setup_camera)
-                .with_system(spawn_map)
-                .with_system(create_map_spawner),
-        )
-        .add_system_set(
-            SystemSet::new()
-                .with_system(close_on_esc)
-                .with_system(player_input_system)
-                .with_system(respawn_map_input_system),
-        )
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(run_if_map_respawned)
-                .with_system(remove_spawn_points)
-                .with_system(despawn_player)
-                .with_system(despawn_map)
-                .with_system(spawn_map),
-        )
-        .add_system_set(
-            SystemSet::new()
-                .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-                .with_system(move_entities)
-                .with_system(spawn_chunks_around_camera)
-                .with_system(despawn_chunks_far_away)
-                .with_system(pan_camera)
-                .with_system(spawn_player),
-        )
-        .insert_resource(ChunkManager::default())
-        .run();
+        .add_plugin(TilemapPlugin);
+
+    let setup = SystemSet::new()
+        .with_system(setup_camera)
+        .with_system(spawn_map)
+        .with_system(create_map_spawner);
+
+    app.add_startup_system_set(setup)
+        .insert_resource(ChunkManager::default());
+
+    let input_system = SystemSet::new()
+        .with_system(close_on_esc)
+        .with_system(player_input_system)
+        .with_system(respawn_map_input_system);
+
+    app.add_system_set(input_system);
+
+    let spawning_system = SystemSet::new()
+        .with_run_criteria(run_if_map_respawned)
+        .with_system(remove_spawn_points)
+        .with_system(despawn_player)
+        .with_system(despawn_map)
+        .with_system(spawn_map);
+
+    app.add_system_set(spawning_system);
+
+    let logic = SystemSet::new()
+        .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
+        .with_system(move_entities)
+        .with_system(spawn_chunks_around_camera)
+        .with_system(despawn_chunks_far_away)
+        .with_system(pan_camera)
+        .with_system(spawn_player);
+
+    app.add_system_set(logic);
+
+    app.run();
 }
