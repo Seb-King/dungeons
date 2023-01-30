@@ -159,8 +159,10 @@ pub fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
         _ => UP,
     };
 
-    let last_room = state.layout.rooms.last();
-    let position = if let Some(room) = last_room {
+    let index = rng.gen_range(0..state.layout.rooms.len());
+    let random_room = state.layout.rooms.get(index);
+
+    let position = if let Some(room) = random_room {
         let width = room.shape.width - 1;
         let height = room.shape.height - 1;
 
@@ -284,7 +286,8 @@ mod dungeon_builder_tests {
         let result = builder.generate();
 
         assert_eq!(result.is_ok(), true);
-        assert_eq!(result.unwrap().layout.rooms.len(), 1);
-        assert_eq!(result.unwrap().layout.corridors.len(), 1);
+        let layout = result.unwrap().layout;
+        assert_eq!(layout.rooms.len(), 1);
+        assert_eq!(layout.corridors.len(), 1);
     }
 }
