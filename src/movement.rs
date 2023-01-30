@@ -28,10 +28,22 @@ pub enum Direction {
 pub fn move_entities(
     mut query: Query<(&mut Movement, &mut Transform), (Without<Camera2d>, Without<MainCamera>)>,
     mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    world_map: Res<TileMap>,
 ) {
     let mut camera_transform = camera_query.get_single_mut().unwrap();
 
     for (mut movement, mut transform) in &mut query {
+        let collides = check_if_collides_with_walls(
+            &IVec2::new(movement.position.x, movement.position.y),
+            &movement.direction,
+            &world_map,
+        );
+
+        if collides {
+            movement.direction = Direction::None;
+            continue;
+        }
+
         match movement.direction {
             Direction::Up => {
                 camera_transform.translation += Vec3::Y * 16.0;
@@ -60,25 +72,25 @@ pub fn move_entities(
     }
 }
 
-pub fn check_collisions(mut movement_query: Query<&mut Movement>, world_map: Res<TileMap>) {
-    for mut movement in &mut movement_query {
-        let mut x = movement.position.x;
-        let mut y = movement.position.y;
+fn check_if_collides_with_walls(pos: &IVec2, direction: &Direction, map: &TileMap) -> bool {
+    let mut x = pos.x;
+    let mut y = pos.y;
 
-        match movement.direction {
-            Direction::Up => y += 1,
-            Direction::Down => y -= 1,
-            Direction::Left => x -= 1,
-            Direction::Right => x += 1,
-            _ => {}
-        }
-
-        let tile_type = world_map.get(IVec2::new(x as i32, y as i32));
-
-        if tile_type == TileType::Wall {
-            movement.direction = Direction::None;
-        }
+    match direction {
+        Direction::Up => y += 1,
+        Direction::Down => y -= 1,
+        Direction::Left => x -= 1,
+        Direction::Right => x += 1,
+        _ => {}
     }
+
+    let tile_type = map.get(IVec2::new(x as i32, y as i32));
+
+    if tile_type == TileType::Wall {
+        return true;
+    }
+
+    return false;
 }
 
 pub fn player_input_system(

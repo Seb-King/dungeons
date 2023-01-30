@@ -7,7 +7,6 @@ mod spawns;
 
 use crate::camera::{setup_camera, PostProcessingMaterial};
 use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
-use crate::movement::check_collisions;
 use crate::player::{despawn_player, spawn_player};
 use crate::spawns::remove_spawn_points;
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
@@ -56,7 +55,6 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(FixedTimestep::step(TIME_STEP as f64))
-                .with_system(check_collisions.before(move_entities))
                 .with_system(move_entities)
                 .with_system(spawn_chunks_around_camera)
                 .with_system(despawn_chunks_far_away)
