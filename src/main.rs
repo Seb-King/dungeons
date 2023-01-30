@@ -35,7 +35,6 @@ fn main() {
             SystemSet::new()
                 .with_system(setup_camera)
                 .with_system(spawn_map)
-                .with_system(spawn_player.after(spawn_map))
                 .with_system(create_map_spawner),
         )
         .add_system_set(
@@ -47,9 +46,9 @@ fn main() {
         .add_system_set(
             SystemSet::new()
                 .with_run_criteria(run_if_map_respawned)
-                .with_system(remove_spawn_points.before(spawn_map))
-                .with_system(despawn_player.before(spawn_map))
-                .with_system(despawn_map.before(spawn_map))
+                .with_system(remove_spawn_points)
+                .with_system(despawn_player)
+                .with_system(despawn_map)
                 .with_system(spawn_map),
         )
         .add_system_set(
