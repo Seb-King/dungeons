@@ -76,16 +76,16 @@ pub trait Collision {
             right_box.position.y + right_box.shape.height as i32 - 1,
         );
 
-        let x_line_collide = lines_collide(&left_x_line, &right_x_line);
-        let y_line_collide = lines_collide(&left_y_line, &right_y_line);
+        let x_line_intersect = lines_intersect(&left_x_line, &right_x_line);
+        let y_line_intersect = lines_intersect(&left_y_line, &right_y_line);
 
-        return x_line_collide && y_line_collide;
+        return x_line_intersect && y_line_intersect;
     }
 
     fn to_collision_box(&self) -> CollisionBox;
 }
 
-fn lines_collide(lhs: &Line, rhs: &Line) -> bool {
+fn lines_intersect(lhs: &Line, rhs: &Line) -> bool {
     return (rhs.start <= lhs.start && lhs.start <= rhs.end)
         || (rhs.start <= lhs.end && lhs.end <= rhs.end)
         || (lhs.start <= rhs.start && lhs.end >= rhs.end);
@@ -149,10 +149,10 @@ impl Collision for Corridor {
 impl From<Orientation> for IVec2 {
     fn from(value: Orientation) -> Self {
         match value {
-            Orientation::RIGHT => IVec2::X,
-            Orientation::LEFT => IVec2::NEG_X,
-            Orientation::UP => IVec2::Y,
-            Orientation::DOWN => IVec2::NEG_Y,
+            RIGHT => IVec2::X,
+            LEFT => IVec2::NEG_X,
+            UP => IVec2::Y,
+            DOWN => IVec2::NEG_Y,
         }
     }
 }
@@ -165,7 +165,7 @@ mod line_collision_tests {
     fn line_collides_with_itself() {
         let line = Line::new(0, 10);
 
-        assert_eq!(lines_collide(&line, &line), true);
+        assert_eq!(lines_intersect(&line, &line), true);
     }
 
     #[test]
@@ -173,7 +173,7 @@ mod line_collision_tests {
         let line_1 = Line::new(0, 10);
         let line_2 = Line::new(0, 9);
 
-        assert_eq!(lines_collide(&line_1, &line_2), true);
+        assert_eq!(lines_intersect(&line_1, &line_2), true);
     }
 
     #[test]
@@ -181,7 +181,7 @@ mod line_collision_tests {
         let line_1 = Line::new(0, 10);
         let line_2 = Line::new(-1, 10);
 
-        assert_eq!(lines_collide(&line_1, &line_2), true);
+        assert_eq!(lines_intersect(&line_1, &line_2), true);
     }
 
     #[test]
@@ -189,7 +189,7 @@ mod line_collision_tests {
         let line_1 = Line::new(0, 10);
         let line_2 = Line::new(1, 9);
 
-        assert_eq!(lines_collide(&line_1, &line_2), true);
+        assert_eq!(lines_intersect(&line_1, &line_2), true);
     }
 
     #[test]
@@ -197,7 +197,7 @@ mod line_collision_tests {
         let line_1 = Line::new(0, 10);
         let line_2 = Line::new(2, 8);
 
-        assert_eq!(lines_collide(&line_1, &line_2), true);
+        assert_eq!(lines_intersect(&line_1, &line_2), true);
     }
 
     #[test]
@@ -205,7 +205,7 @@ mod line_collision_tests {
         let line_1 = Line::new(0, 10);
         let line_2 = Line::new(2, 12);
 
-        assert_eq!(lines_collide(&line_1, &line_2), true);
+        assert_eq!(lines_intersect(&line_1, &line_2), true);
     }
 
     #[test]
@@ -213,7 +213,7 @@ mod line_collision_tests {
         let line_1 = Line::new(1, 3);
         let line_2 = Line::new(-2, 0);
 
-        assert_eq!(lines_collide(&line_1, &line_2), false);
+        assert_eq!(lines_intersect(&line_1, &line_2), false);
     }
 }
 

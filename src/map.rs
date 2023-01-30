@@ -318,8 +318,8 @@ fn spawn_chunk(
 
 fn get_tile_index(tile_type: TileType) -> u32 {
     match tile_type {
+        TileType::Void => 0,
         TileType::Floor => 1,
         TileType::Wall => 2,
-        TileType::Void => 0,
     }
 }
