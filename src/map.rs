@@ -214,7 +214,7 @@ pub fn create_map_spawner(mut commands: Commands) {
 
 pub fn spawn_map(mut commands: Commands) {
     let generator = DungeonGenerator::new()
-        .add_retryable_step(add_room)
+        .add_step(add_room)
         .add_retryable_step(place_player_spawn)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)

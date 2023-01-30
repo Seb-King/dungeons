@@ -1,5 +1,6 @@
 use crate::camera::MainCamera;
 use crate::map::{TileMap, TileType};
+use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use bevy::prelude::*;
 
 #[derive(Component)]
@@ -17,12 +18,25 @@ pub struct Position {
 #[derive(Component)]
 pub struct Controllable;
 
+#[derive(Clone, Copy)]
 pub enum Direction {
     None,
     Up,
     Down,
     Left,
     Right,
+}
+
+fn near_screen_edge(pos: Vec3, camera_pos: Vec3, direction: Direction) -> bool {
+    let screen_pos = pos - camera_pos;
+
+    return match direction {
+        Direction::Right => screen_pos.x > (SCREEN_WIDTH / 4) as f32,
+        Direction::Left => screen_pos.x < -((SCREEN_WIDTH / 4) as f32),
+        Direction::Up => screen_pos.y > (SCREEN_HEIGHT / 4) as f32,
+        Direction::Down => screen_pos.y < -((SCREEN_HEIGHT / 4) as f32),
+        _ => false,
+    };
 }
 
 pub fn move_entities(
@@ -34,7 +48,7 @@ pub fn move_entities(
 
     for (mut movement, mut transform) in &mut query {
         let collides = check_if_collides_with_walls(
-            &IVec2::new(movement.position.x, movement.position.y),
+            IVec2::new(movement.position.x, movement.position.y),
             &movement.direction,
             &world_map,
         );
@@ -44,35 +58,46 @@ pub fn move_entities(
             continue;
         }
 
+        let player_is_near_screen_edge = near_screen_edge(
+            transform.translation,
+            camera_transform.translation,
+            movement.direction,
+        );
+
+        let mut camera_delta = Vec3::ZERO;
         match movement.direction {
             Direction::Up => {
-                camera_transform.translation += Vec3::Y * 16.0;
+                camera_delta += Vec3::Y * 16.0;
                 transform.translation += Vec3::Y * 16.0;
                 movement.position.y += 1;
             }
             Direction::Down => {
-                camera_transform.translation -= Vec3::Y * 16.0;
+                camera_delta -= Vec3::Y * 16.0;
                 transform.translation -= Vec3::Y * 16.0;
                 movement.position.y -= 1;
             }
             Direction::Left => {
-                camera_transform.translation -= Vec3::X * 16.0;
+                camera_delta -= Vec3::X * 16.0;
                 transform.translation -= Vec3::X * 16.0;
                 movement.position.x -= 1;
             }
             Direction::Right => {
-                camera_transform.translation += Vec3::X * 16.0;
+                camera_delta += Vec3::X * 16.0;
                 transform.translation += Vec3::X * 16.0;
                 movement.position.x += 1;
             }
             _ => {}
         }
 
+        if player_is_near_screen_edge {
+            camera_transform.translation += camera_delta;
+        }
+
         movement.direction = Direction::None;
     }
 }
 
-fn check_if_collides_with_walls(pos: &IVec2, direction: &Direction, map: &TileMap) -> bool {
+fn check_if_collides_with_walls(pos: IVec2, direction: &Direction, map: &TileMap) -> bool {
     let mut x = pos.x;
     let mut y = pos.y;
 
