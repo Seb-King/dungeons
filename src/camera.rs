@@ -67,7 +67,7 @@ pub fn setup_camera(
             },
             ..default()
         },
-        UiCameraConfig { show_ui: false },
+        UiCameraConfig { show_ui: true },
         MainCamera,
     ));
 
@@ -111,6 +111,7 @@ pub fn setup_camera(
             },
             ..Camera2dBundle::default()
         },
+        UiCameraConfig { show_ui: false },
         post_processing_pass_layer,
     ));
 }

@@ -1,11 +1,13 @@
 mod camera;
 mod dungeon_generation;
+mod inventory;
 mod map;
 mod movement;
 mod player;
 mod spawns;
 
 use crate::camera::{setup_camera, PostProcessingMaterial};
+use crate::inventory::{pickup_items, setup_text, text_update_system, Inventory};
 use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
 use crate::player::spawn_player;
 use crate::spawns::{despawn_objects, remove_spawn_points, spawn_key};
@@ -38,10 +40,12 @@ fn main() {
     let setup = SystemSet::new()
         .with_system(setup_camera)
         .with_system(spawn_map)
-        .with_system(create_map_spawner);
+        .with_system(create_map_spawner)
+        .with_system(setup_text);
 
     app.add_startup_system_set(setup)
-        .insert_resource(ChunkManager::default());
+        .insert_resource(ChunkManager::default())
+        .insert_resource(Inventory::default());
 
     let input_system = SystemSet::new()
         .with_system(close_on_esc)
@@ -66,7 +70,9 @@ fn main() {
         .with_system(despawn_chunks_far_away)
         .with_system(pan_camera)
         .with_system(spawn_player)
-        .with_system(spawn_key);
+        .with_system(spawn_key)
+        .with_system(pickup_items)
+        .with_system(text_update_system);
 
     app.add_fixed_timestep(Duration::from_secs_f32(TIME_STEP), "game_logic")
         .add_fixed_timestep_system_set("game_logic", 0, logic);
