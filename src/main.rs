@@ -15,10 +15,12 @@ use bevy::window::close_on_esc;
 use bevy::{prelude::*, time::FixedTimestep};
 use bevy_ecs_tilemap::prelude::*;
 use camera::pan_camera;
+use iyes_loopless::prelude::AppLooplessFixedTimestepExt;
 use map::{
     create_map_spawner, despawn_map, respawn_map_input_system, run_if_map_respawned, ChunkManager,
 };
 use movement::{move_entities, player_input_system};
+use std::time::Duration;
 
 const TIME_STEP: f32 = 1.0 / 60.0;
 const SCREEN_WIDTH: u32 = 1280;
@@ -66,7 +68,8 @@ fn main() {
         .with_system(spawn_player)
         .with_system(spawn_key);
 
-    app.add_system_set(logic);
+    app.add_fixed_timestep(Duration::from_secs_f32(TIME_STEP), "game_logic")
+        .add_fixed_timestep_system_set("game_logic", 0, logic);
 
     app.run();
 }
