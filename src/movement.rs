@@ -111,11 +111,7 @@ fn check_if_collides_with_walls(pos: IVec2, direction: &Direction, map: &TileMap
 
     let tile_type = map.get(IVec2::new(x as i32, y as i32));
 
-    if tile_type == TileType::Wall {
-        return true;
-    }
-
-    return false;
+    return tile_type == TileType::Wall;
 }
 
 pub fn player_input_system(
