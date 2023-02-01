@@ -1,6 +1,7 @@
 use crate::dungeon_generation::door::Door;
 use crate::dungeon_generation::key::Key;
 use crate::map::ItemMap;
+use crate::movement::Collidable;
 use crate::player::Player;
 use bevy::math::{IVec2, Quat};
 use bevy::prelude::{
@@ -69,6 +70,7 @@ pub fn spawn_door(mut commands: Commands, mut door_spawn_query: Query<&mut Spawn
 
             commands.spawn((
                 Door,
+                Collidable,
                 SpriteBundle {
                     sprite: Sprite {
                         color: Color::rgb(0.0, 0.05, 0.1),

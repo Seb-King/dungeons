@@ -18,6 +18,9 @@ pub struct Position {
 #[derive(Component)]
 pub struct Controllable;
 
+#[derive(Component)]
+pub struct Collidable;
+
 #[derive(Clone, Copy)]
 pub enum Direction {
     None,
@@ -40,20 +43,24 @@ fn near_screen_edge(pos: Vec3, camera_pos: Vec3, direction: Direction) -> bool {
 }
 
 pub fn move_entities(
-    mut query: Query<(&mut Movement, &mut Transform), (Without<Camera2d>, Without<MainCamera>)>,
-    mut camera_query: Query<&mut Transform, With<MainCamera>>,
+    mut query: Query<
+        (&mut Movement, &mut Transform),
+        (Without<Camera2d>, Without<MainCamera>, Without<Collidable>),
+    >,
+    mut camera_query: Query<&mut Transform, (With<MainCamera>, Without<Collidable>)>,
+    collidable_query: Query<&Transform, With<Collidable>>,
     world_map: Res<TileMap>,
 ) {
     let mut camera_transform = camera_query.get_single_mut().unwrap();
 
     for (mut movement, mut transform) in &mut query {
-        let collides = check_if_collides_with_walls(
-            IVec2::new(movement.position.x, movement.position.y),
-            &movement.direction,
-            &world_map,
-        );
+        let pos = IVec2::new(movement.position.x, movement.position.y);
+        let collides_with_wall = check_if_collides_with_walls(pos, &movement.direction, &world_map);
 
-        if collides {
+        let collides_with_collidable =
+            collides_with_any_collidable(pos, &movement.direction, &collidable_query);
+
+        if collides_with_wall || collides_with_collidable {
             movement.direction = Direction::None;
             continue;
         }
@@ -95,6 +102,36 @@ pub fn move_entities(
 
         movement.direction = Direction::None;
     }
+}
+
+fn collides_with_any_collidable(
+    pos: IVec2,
+    direction: &Direction,
+    collidable_query: &Query<&Transform, With<Collidable>>,
+) -> bool {
+    for transform in collidable_query.iter() {
+        let mut x = pos.x;
+        let mut y = pos.y;
+
+        match direction {
+            Direction::Up => y += 1,
+            Direction::Down => y -= 1,
+            Direction::Left => x -= 1,
+            Direction::Right => x += 1,
+            _ => {}
+        }
+
+        let v: IVec2 = IVec2::new(
+            (transform.translation.x as i32) / 16,
+            (transform.translation.y as i32) / 16,
+        );
+
+        if IVec2::new(x, y).eq(&v) {
+            return true;
+        }
+    }
+
+    return false;
 }
 
 fn check_if_collides_with_walls(pos: IVec2, direction: &Direction, map: &TileMap) -> bool {
