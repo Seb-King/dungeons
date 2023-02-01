@@ -1,9 +1,10 @@
 use crate::dungeon_generation::key::Key;
+use crate::map::ItemMap;
 use crate::player::Player;
 use bevy::math::{IVec2, Quat};
 use bevy::prelude::{
-    default, Added, Color, Commands, Component, DespawnRecursiveExt, Entity, Or, Query, Sprite,
-    SpriteBundle, Transform, Vec2, Vec3, With,
+    default, Added, Color, Commands, Component, DespawnRecursiveExt, Entity, Or, Query, ResMut,
+    Sprite, SpriteBundle, Transform, Vec2, Vec3, With,
 };
 
 #[derive(Component)]
@@ -18,7 +19,11 @@ pub fn remove_spawn_points(mut commands: Commands, spawns_query: Query<Entity, W
     }
 }
 
-pub fn spawn_key(mut commands: Commands, mut key_spawn_query: Query<&mut Spawn, Added<Key>>) {
+pub fn spawn_key(
+    mut commands: Commands,
+    mut key_spawn_query: Query<&mut Spawn, Added<Key>>,
+    mut item_map: ResMut<ItemMap>,
+) {
     if let Ok(mut spawn) = key_spawn_query.get_single_mut() {
         if !spawn.spawned {
             spawn.spawned = true;
@@ -29,7 +34,7 @@ pub fn spawn_key(mut commands: Commands, mut key_spawn_query: Query<&mut Spawn, 
                 1.0,
             );
 
-            commands.spawn((
+            let entity = commands.spawn((
                 Key,
                 SpriteBundle {
                     sprite: Sprite {
@@ -42,6 +47,10 @@ pub fn spawn_key(mut commands: Commands, mut key_spawn_query: Query<&mut Spawn, 
                     ..default()
                 },
             ));
+
+            item_map
+                .item_map
+                .insert(spawn.position, ("key".to_string(), entity.id()));
         }
     }
 }

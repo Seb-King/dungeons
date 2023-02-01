@@ -28,7 +28,7 @@ pub struct TileMap {
 
 #[derive(Resource, Default)]
 pub struct ItemMap {
-    pub item_map: HashMap<IVec2, String>,
+    pub item_map: HashMap<IVec2, (String, Entity)>,
 }
 
 impl TileMap {
@@ -237,11 +237,7 @@ pub fn spawn_map(mut commands: Commands) {
 
     let tile_map = get_tile_map(&dungeon.layout);
 
-    let mut item_map = ItemMap::default();
-
     for spawn in dungeon.spawns.iter() {
-        let pos = spawn.position;
-
         match spawn.spawn_type {
             SpawnType::Player => {
                 commands.spawn((
@@ -253,8 +249,6 @@ pub fn spawn_map(mut commands: Commands) {
                 ));
             }
             SpawnType::Key => {
-                item_map.item_map.insert(pos, "key".to_string());
-
                 commands.spawn((
                     Key,
                     Spawn {
@@ -266,7 +260,7 @@ pub fn spawn_map(mut commands: Commands) {
         }
     }
 
-    commands.insert_resource(item_map);
+    commands.insert_resource(ItemMap::default());
     commands.insert_resource(tile_map);
 }
 

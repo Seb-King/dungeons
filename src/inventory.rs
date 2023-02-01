@@ -3,7 +3,6 @@ use crate::player::Player;
 use bevy::log::warn;
 use bevy::prelude::*;
 use bevy::utils::HashMap;
-use std::borrow::Borrow;
 
 #[derive(Resource, Default)]
 pub struct Inventory {
@@ -23,10 +22,12 @@ impl Inventory {
             .insert(item.to_string(), self.get_item_count(item) + stack_size);
     }
 
+    #[allow(dead_code)]
     pub fn remove_item(&mut self, item: &str) {
         self.remove_item_stack(item, 1);
     }
 
+    #[allow(dead_code)]
     pub fn remove_item_stack(&mut self, item: &str, stack_size: u32) {
         let count = self.get_item_count(item);
         if count > 0 {
@@ -42,6 +43,7 @@ impl Inventory {
 }
 
 pub fn pickup_items(
+    mut commands: Commands,
     mut inventory: ResMut<Inventory>,
     mut item_map: ResMut<ItemMap>,
     player_query: Query<&Transform, With<Player>>,
@@ -52,9 +54,9 @@ pub fn pickup_items(
             (transform.translation.y / 16.0) as i32,
         );
 
-        if let Some(item) = item_map.item_map.get(&pos) {
-            inventory.add_item(item);
-            item_map.item_map.remove(&pos);
+        if let Some((item_name, entity)) = item_map.item_map.remove(&pos) {
+            inventory.add_item(&item_name);
+            commands.entity(entity).despawn_recursive();
         }
     }
 }
