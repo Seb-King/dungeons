@@ -1,3 +1,4 @@
+use crate::dungeon_generation::door::Door;
 use crate::dungeon_generation::key::Key;
 use crate::map::ItemMap;
 use crate::player::Player;
@@ -55,9 +56,37 @@ pub fn spawn_key(
     }
 }
 
+pub fn spawn_door(mut commands: Commands, mut door_spawn_query: Query<&mut Spawn, Added<Door>>) {
+    if let Ok(mut spawn) = door_spawn_query.get_single_mut() {
+        if !spawn.spawned {
+            spawn.spawned = true;
+
+            let translation = Vec3::new(
+                spawn.position.x as f32 * 16.0,
+                spawn.position.y as f32 * 16.0,
+                1.0,
+            );
+
+            commands.spawn((
+                Door,
+                SpriteBundle {
+                    sprite: Sprite {
+                        color: Color::rgb(0.0, 0.05, 0.1),
+                        custom_size: Some(Vec2::new(16.0, 16.0)),
+                        ..default()
+                    },
+                    transform: Transform::from_rotation(Quat::from_axis_angle(Vec3::Z, 0.0))
+                        .with_translation(translation),
+                    ..default()
+                },
+            ));
+        }
+    }
+}
+
 pub fn despawn_objects(
     mut commands: Commands,
-    player_query: Query<Entity, Or<(With<Player>, With<Key>)>>,
+    player_query: Query<Entity, Or<(With<Player>, With<Key>, With<Door>)>>,
 ) {
     for entity in player_query.iter() {
         commands.entity(entity).despawn_recursive();

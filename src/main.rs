@@ -10,7 +10,7 @@ use crate::camera::{setup_camera, PostProcessingMaterial};
 use crate::inventory::{pickup_items, setup_text, text_update_system, Inventory};
 use crate::map::{despawn_chunks_far_away, spawn_chunks_around_camera, spawn_map};
 use crate::player::spawn_player;
-use crate::spawns::{despawn_objects, remove_spawn_points, spawn_key};
+use crate::spawns::{despawn_objects, remove_spawn_points, spawn_door, spawn_key};
 use bevy::diagnostic::{FrameTimeDiagnosticsPlugin, LogDiagnosticsPlugin};
 use bevy::sprite::Material2dPlugin;
 use bevy::window::close_on_esc;
@@ -71,6 +71,7 @@ fn main() {
         .with_system(pan_camera)
         .with_system(spawn_player)
         .with_system(spawn_key)
+        .with_system(spawn_door)
         .with_system(pickup_items)
         .with_system(text_update_system);
 

@@ -1,4 +1,5 @@
 use crate::camera::MainCamera;
+use crate::dungeon_generation::door::{add_door, Door};
 use crate::dungeon_generation::dungeon_generator::SpawnType;
 use crate::dungeon_generation::dungeon_generator::{
     add_corridor_then_room, add_room, DungeonGenerator, DungeonLayout,
@@ -231,7 +232,8 @@ pub fn spawn_map(mut commands: Commands) {
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
         .add_retryable_step(add_corridor_then_room)
-        .add_retryable_step(add_key);
+        .add_retryable_step(add_key)
+        .add_retryable_step(add_door);
 
     let dungeon = generator.generate().unwrap();
 
@@ -251,6 +253,15 @@ pub fn spawn_map(mut commands: Commands) {
             SpawnType::Key => {
                 commands.spawn((
                     Key,
+                    Spawn {
+                        position: spawn.position,
+                        spawned: false,
+                    },
+                ));
+            }
+            SpawnType::Door => {
+                commands.spawn((
+                    Door,
                     Spawn {
                         position: spawn.position,
                         spawned: false,

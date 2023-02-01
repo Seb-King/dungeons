@@ -1,9 +1,11 @@
+use crate::dungeon_generation::key::Key;
 use crate::dungeon_generation::room::Orientation::{DOWN, LEFT, RIGHT, UP};
 use crate::dungeon_generation::room::{Collision, Corridor, IShape, Rectangle, Room};
 use bevy::prelude::IVec2;
 use rand::prelude::ThreadRng;
 use rand::Rng;
 use std::cell::RefCell;
+use std::path::Component;
 use std::rc::Rc;
 
 pub struct DungeonState {
@@ -32,6 +34,7 @@ pub struct Spawn {
 pub enum SpawnType {
     Player,
     Key,
+    Door,
 }
 
 trait Generator<T, Params> {

@@ -3,7 +3,7 @@ use bevy::prelude::{Component, IVec2};
 use rand::Rng;
 use std::rc::Rc;
 
-#[derive(Component, Debug)]
+#[derive(Component, Debug, Default)]
 pub struct Key;
 
 pub fn add_key(state: &DungeonState) -> Result<DungeonState, String> {
