@@ -15,6 +15,11 @@ pub struct Spawn {
     pub spawned: bool,
 }
 
+#[derive(Component)]
+pub struct Openable {
+    pub opened_by: String,
+}
+
 pub fn remove_spawn_points(mut commands: Commands, spawns_query: Query<Entity, With<Spawn>>) {
     if let Ok(entity) = spawns_query.get_single() {
         commands.entity(entity).despawn_recursive();
@@ -70,6 +75,9 @@ pub fn spawn_door(mut commands: Commands, mut door_spawn_query: Query<&mut Spawn
 
             commands.spawn((
                 Door,
+                Openable {
+                    opened_by: "key".to_string(),
+                },
                 Collidable,
                 SpriteBundle {
                     sprite: Sprite {

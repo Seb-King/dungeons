@@ -1,7 +1,10 @@
 use crate::camera::MainCamera;
+use crate::inventory::Inventory;
 use crate::map::{TileMap, TileType};
+use crate::spawns::Openable;
 use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};
 use bevy::prelude::*;
+use std::borrow::BorrowMut;
 
 #[derive(Component)]
 pub struct Movement {
@@ -43,13 +46,15 @@ fn near_screen_edge(pos: Vec3, camera_pos: Vec3, direction: Direction) -> bool {
 }
 
 pub fn move_entities(
+    mut commands: Commands,
     mut query: Query<
         (&mut Movement, &mut Transform),
         (Without<Camera2d>, Without<MainCamera>, Without<Collidable>),
     >,
     mut camera_query: Query<&mut Transform, (With<MainCamera>, Without<Collidable>)>,
-    collidable_query: Query<&Transform, With<Collidable>>,
+    collidable_query: Query<(Entity, &Transform, Option<&Openable>), With<Collidable>>,
     world_map: Res<TileMap>,
+    mut inventory: ResMut<Inventory>,
 ) {
     let mut camera_transform = camera_query.get_single_mut().unwrap();
 
@@ -57,8 +62,13 @@ pub fn move_entities(
         let pos = IVec2::new(movement.position.x, movement.position.y);
         let collides_with_wall = check_if_collides_with_walls(pos, &movement.direction, &world_map);
 
-        let collides_with_collidable =
-            collides_with_any_collidable(pos, &movement.direction, &collidable_query);
+        let collides_with_collidable = collides_with_any_collidable(
+            commands.borrow_mut(),
+            pos,
+            &movement.direction,
+            &collidable_query,
+            inventory.borrow_mut(),
+        );
 
         if collides_with_wall || collides_with_collidable {
             movement.direction = Direction::None;
@@ -105,11 +115,13 @@ pub fn move_entities(
 }
 
 fn collides_with_any_collidable(
+    commands: &mut Commands,
     pos: IVec2,
     direction: &Direction,
-    collidable_query: &Query<&Transform, With<Collidable>>,
+    collidable_query: &Query<(Entity, &Transform, Option<&Openable>), With<Collidable>>,
+    inventory: &mut ResMut<Inventory>,
 ) -> bool {
-    for transform in collidable_query.iter() {
+    for (entity, transform, option) in collidable_query.iter() {
         let mut x = pos.x;
         let mut y = pos.y;
 
@@ -127,6 +139,15 @@ fn collides_with_any_collidable(
         );
 
         if IVec2::new(x, y).eq(&v) {
+            if let Some(openable) = option {
+                let item_count = inventory.get_item_count(&openable.opened_by);
+                if item_count > 0 {
+                    inventory.remove_item(&openable.opened_by);
+                    commands.entity(entity).despawn_recursive();
+                    return false;
+                }
+            }
+
             return true;
         }
     }
