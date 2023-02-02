@@ -1,5 +1,5 @@
-use crate::dungeon_generation::dungeon_generator::Spawn;
 use crate::dungeon_generation::room::{Corridor, Room};
+use crate::dungeon_generation::spawn_generation::Spawn;
 use rand::prelude::ThreadRng;
 use std::cell::RefCell;
 use std::rc::Rc;

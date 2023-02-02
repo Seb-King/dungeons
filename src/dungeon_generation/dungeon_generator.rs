@@ -10,19 +10,6 @@ pub struct DungeonGenerator {
     steps: Vec<BoxedStep<DungeonState>>,
 }
 
-#[derive(Clone, Debug)]
-pub struct Spawn {
-    pub position: IVec2,
-    pub spawn_type: SpawnType,
-}
-
-#[derive(Clone, Debug, PartialEq)]
-pub enum SpawnType {
-    Player,
-    Key,
-    Door,
-}
-
 type Step<T> = fn(&T) -> Result<T, String>;
 type BoxedStep<T> = Box<dyn Fn(&T) -> Result<T, String>>;
 

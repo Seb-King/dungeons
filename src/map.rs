@@ -1,12 +1,11 @@
 use crate::camera::MainCamera;
 use crate::dungeon_generation::door::{add_door, Door};
-use crate::dungeon_generation::dungeon_generator::SpawnType;
 use crate::dungeon_generation::dungeon_generator::{
     add_corridor_then_room, add_room, DungeonGenerator,
 };
 use crate::dungeon_generation::dungeon_state::DungeonLayout;
 use crate::dungeon_generation::key::{add_key, Key};
-use crate::dungeon_generation::spawn_generation::place_player_spawn;
+use crate::dungeon_generation::spawn_generation::{place_player_spawn, SpawnType};
 use crate::player::Player;
 use crate::spawns::Spawn;
 use crate::{SCREEN_HEIGHT, SCREEN_WIDTH};

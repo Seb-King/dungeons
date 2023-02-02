@@ -1,8 +1,19 @@
-use crate::dungeon_generation::dungeon_generator::Spawn;
-use crate::dungeon_generation::dungeon_generator::SpawnType::Player;
 use crate::dungeon_generation::dungeon_state::{DungeonState, DungeonStateBuilder};
 use bevy::math::IVec2;
 use rand::Rng;
+
+#[derive(Clone, Debug)]
+pub struct Spawn {
+    pub position: IVec2,
+    pub spawn_type: SpawnType,
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum SpawnType {
+    Player,
+    Key,
+    Door,
+}
 
 pub fn place_player_spawn(state: &DungeonState) -> Result<DungeonState, String> {
     let first_room = state.layout.rooms.get(0);
@@ -16,7 +27,7 @@ pub fn place_player_spawn(state: &DungeonState) -> Result<DungeonState, String> 
         let mut spawns = state.spawns.clone();
         spawns.push(Spawn {
             position: IVec2::new(x, y) + room.position,
-            spawn_type: Player,
+            spawn_type: SpawnType::Player,
         });
 
         return Ok(DungeonStateBuilder::from_state(state)
