@@ -6,6 +6,7 @@ use rand::Rng;
 use std::cell::RefCell;
 use std::rc::Rc;
 
+#[derive(Default)]
 pub struct DungeonGenerator {
     steps: Vec<BoxedStep<DungeonState>>,
 }
@@ -14,6 +15,7 @@ type Step<T> = fn(&T) -> Result<T, String>;
 type BoxedStep<T> = Box<dyn Fn(&T) -> Result<T, String>>;
 
 impl DungeonGenerator {
+    #[allow(dead_code)]
     pub fn new() -> DungeonGenerator {
         DungeonGenerator { steps: Vec::new() }
     }

@@ -27,10 +27,7 @@ pub fn spawn_player(
                 movement::Controllable,
                 movement::Movement {
                     direction: movement::Direction::None,
-                    position: movement::Position {
-                        x: spawn.position.x,
-                        y: spawn.position.y,
-                    },
+                    position: spawn.position,
                 },
                 SpriteBundle {
                     sprite: Sprite {

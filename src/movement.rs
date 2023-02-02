@@ -9,7 +9,7 @@ use std::borrow::BorrowMut;
 #[derive(Component)]
 pub struct Movement {
     pub direction: Direction,
-    pub position: Position,
+    pub position: IVec2,
 }
 
 #[derive(Component)]
@@ -31,6 +31,18 @@ pub enum Direction {
     Down,
     Left,
     Right,
+}
+
+impl From<Direction> for IVec2 {
+    fn from(value: Direction) -> Self {
+        match value {
+            Direction::Right => IVec2::X,
+            Direction::Left => IVec2::NEG_X,
+            Direction::Up => IVec2::Y,
+            Direction::Down => IVec2::NEG_Y,
+            Direction::None => IVec2::ZERO,
+        }
+    }
 }
 
 fn near_screen_edge(pos: Vec3, camera_pos: Vec3, direction: Direction) -> bool {
@@ -59,13 +71,13 @@ pub fn move_entities(
     let mut camera_transform = camera_query.get_single_mut().unwrap();
 
     for (mut movement, mut transform) in &mut query {
-        let pos = IVec2::new(movement.position.x, movement.position.y);
-        let collides_with_wall = check_if_collides_with_walls(pos, &movement.direction, &world_map);
+        let movement_delta: IVec2 = movement.direction.into();
+        let new_pos = movement.position + movement_delta;
+        let collides_with_wall = check_if_collides_with_walls(new_pos, &world_map);
 
         let collides_with_collidable = collides_with_any_collidable(
             commands.borrow_mut(),
-            pos,
-            &movement.direction,
+            new_pos,
             &collidable_query,
             inventory.borrow_mut(),
         );
@@ -81,33 +93,12 @@ pub fn move_entities(
             movement.direction,
         );
 
-        let mut camera_delta = Vec3::ZERO;
-        match movement.direction {
-            Direction::Up => {
-                camera_delta += Vec3::Y * 16.0;
-                transform.translation += Vec3::Y * 16.0;
-                movement.position.y += 1;
-            }
-            Direction::Down => {
-                camera_delta -= Vec3::Y * 16.0;
-                transform.translation -= Vec3::Y * 16.0;
-                movement.position.y -= 1;
-            }
-            Direction::Left => {
-                camera_delta -= Vec3::X * 16.0;
-                transform.translation -= Vec3::X * 16.0;
-                movement.position.x -= 1;
-            }
-            Direction::Right => {
-                camera_delta += Vec3::X * 16.0;
-                transform.translation += Vec3::X * 16.0;
-                movement.position.x += 1;
-            }
-            _ => {}
-        }
+        let delta_vec3 = Vec3::from((movement_delta.as_vec2(), 0.0));
+        movement.position = new_pos;
+        transform.translation += delta_vec3 * 16.0;
 
         if player_is_near_screen_edge {
-            camera_transform.translation += camera_delta;
+            camera_transform.translation += delta_vec3 * 16.0;
         }
 
         movement.direction = Direction::None;
@@ -117,28 +108,16 @@ pub fn move_entities(
 fn collides_with_any_collidable(
     commands: &mut Commands,
     pos: IVec2,
-    direction: &Direction,
     collidable_query: &Query<(Entity, &Transform, Option<&Openable>), With<Collidable>>,
     inventory: &mut ResMut<Inventory>,
 ) -> bool {
     for (entity, transform, option) in collidable_query.iter() {
-        let mut x = pos.x;
-        let mut y = pos.y;
-
-        match direction {
-            Direction::Up => y += 1,
-            Direction::Down => y -= 1,
-            Direction::Left => x -= 1,
-            Direction::Right => x += 1,
-            _ => {}
-        }
-
         let v: IVec2 = IVec2::new(
             (transform.translation.x as i32) / 16,
             (transform.translation.y as i32) / 16,
         );
 
-        if IVec2::new(x, y).eq(&v) {
+        if pos.eq(&v) {
             if let Some(openable) = option {
                 let item_count = inventory.get_item_count(&openable.opened_by);
                 if item_count > 0 {
@@ -155,21 +134,8 @@ fn collides_with_any_collidable(
     return false;
 }
 
-fn check_if_collides_with_walls(pos: IVec2, direction: &Direction, map: &TileMap) -> bool {
-    let mut x = pos.x;
-    let mut y = pos.y;
-
-    match direction {
-        Direction::Up => y += 1,
-        Direction::Down => y -= 1,
-        Direction::Left => x -= 1,
-        Direction::Right => x += 1,
-        _ => {}
-    }
-
-    let tile_type = map.get(IVec2::new(x as i32, y as i32));
-
-    return tile_type == TileType::Wall;
+fn check_if_collides_with_walls(pos: IVec2, map: &TileMap) -> bool {
+    return map.get(pos) == TileType::Wall;
 }
 
 pub fn player_input_system(
