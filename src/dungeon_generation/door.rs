@@ -1,8 +1,7 @@
 use crate::dungeon_generation::dungeon_generator::{Spawn, SpawnType};
-use crate::dungeon_generation::dungeon_state::{DungeonLayout, DungeonState};
+use crate::dungeon_generation::dungeon_state::{DungeonState, DungeonStateBuilder};
 use bevy::prelude::{Component, IVec2};
 use rand::Rng;
-use std::rc::Rc;
 
 #[derive(Component, Debug)]
 pub struct Door;
@@ -24,14 +23,9 @@ pub fn add_door(state: &DungeonState) -> Result<DungeonState, String> {
             spawn_type: SpawnType::Door,
         });
 
-        return Ok(DungeonState {
-            layout: DungeonLayout {
-                rooms: state.layout.rooms.clone(),
-                corridors: state.layout.corridors.clone(),
-            },
-            spawns,
-            rng: Rc::clone(&state.rng),
-        });
+        return Ok(DungeonStateBuilder::from_state(state)
+            .spawns(spawns)
+            .build());
     }
 
     return Err("Failed to place door".to_string());

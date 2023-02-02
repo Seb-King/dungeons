@@ -1,13 +1,16 @@
 use crate::dungeon_generation::dungeon_generator::{Spawn, SpawnType};
-use crate::dungeon_generation::dungeon_state::{DungeonLayout, DungeonState};
+use crate::dungeon_generation::dungeon_state::{DungeonState, DungeonStateBuilder};
 use bevy::prelude::{Component, IVec2};
 use rand::Rng;
-use std::rc::Rc;
 
 #[derive(Component, Debug, Default)]
 pub struct Key;
 
 pub fn add_key(state: &DungeonState) -> Result<DungeonState, String> {
+    if state.layout.rooms.len() == 0 {
+        return Err("No room to place key in".to_string());
+    }
+
     let mut rng = state.rng.borrow_mut();
 
     let index = rng.gen_range(0..state.layout.rooms.len());
@@ -23,14 +26,9 @@ pub fn add_key(state: &DungeonState) -> Result<DungeonState, String> {
             spawn_type: SpawnType::Key,
         });
 
-        return Ok(DungeonState {
-            layout: DungeonLayout {
-                rooms: state.layout.rooms.clone(),
-                corridors: state.layout.corridors.clone(),
-            },
-            spawns,
-            rng: Rc::clone(&state.rng),
-        });
+        return Ok(DungeonStateBuilder::from_state(state)
+            .spawns(spawns)
+            .build());
     }
 
     return Err("Failed to place key".to_string());

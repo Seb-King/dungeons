@@ -1,9 +1,8 @@
 use crate::dungeon_generation::dungeon_generator::Spawn;
 use crate::dungeon_generation::dungeon_generator::SpawnType::Player;
-use crate::dungeon_generation::dungeon_state::{DungeonLayout, DungeonState};
+use crate::dungeon_generation::dungeon_state::{DungeonState, DungeonStateBuilder};
 use bevy::math::IVec2;
 use rand::Rng;
-use std::rc::Rc;
 
 pub fn place_player_spawn(state: &DungeonState) -> Result<DungeonState, String> {
     let first_room = state.layout.rooms.get(0);
@@ -20,14 +19,9 @@ pub fn place_player_spawn(state: &DungeonState) -> Result<DungeonState, String> 
             spawn_type: Player,
         });
 
-        return Ok(DungeonState {
-            layout: DungeonLayout {
-                rooms: state.layout.rooms.clone(),
-                corridors: state.layout.corridors.clone(),
-            },
-            spawns,
-            rng: Rc::clone(&state.rng),
-        });
+        return Ok(DungeonStateBuilder::from_state(state)
+            .spawns(spawns)
+            .build());
     }
 
     return Err("Could not place player spawn".to_string());
