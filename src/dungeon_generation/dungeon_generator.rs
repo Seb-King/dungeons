@@ -23,12 +23,6 @@ pub enum SpawnType {
     Door,
 }
 
-trait Generator<T, Params> {
-    fn new(params: Params) -> Self;
-
-    fn generate(&self) -> T;
-}
-
 type Step<T> = fn(&T) -> Result<T, String>;
 type BoxedStep<T> = Box<dyn Fn(&T) -> Result<T, String>>;
 
