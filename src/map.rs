@@ -97,26 +97,18 @@ fn get_tile_map(layout: &DungeonLayout) -> TileMap {
     }
 
     for corridor in &layout.corridors {
-        let pos = &corridor.position;
         let shape = &corridor.shape;
 
-        let x_offset = pos.x;
-        let y_offset = pos.y;
+        let dir: IVec2 = corridor.shape.orientation.into();
 
-        let length = shape.length;
+        let perp = dir.perp();
 
-        let dir: IVec2 = shape.orientation.into();
+        for i in 0..shape.length {
+            let floor_pos = corridor.position + dir * (i as i32);
 
-        let perp1 = dir.perp();
-
-        for i in 0..length {
-            let x = x_offset + (i as i32) * dir.x;
-            let y = y_offset + (i as i32) * dir.y;
-
-            let floor_pos = IVec2::new(x, y);
             tile_map.set(floor_pos, TileType::Floor);
-            tile_map.set(floor_pos + perp1, TileType::Wall);
-            tile_map.set(floor_pos - perp1, TileType::Wall);
+            tile_map.set(floor_pos + perp, TileType::Wall);
+            tile_map.set(floor_pos - perp, TileType::Wall);
         }
     }
 
