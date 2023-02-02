@@ -1,22 +1,10 @@
+use crate::dungeon_generation::dungeon_state::{DungeonLayout, DungeonState, DungeonStateBuilder};
 use crate::dungeon_generation::room::Orientation::{DOWN, LEFT, RIGHT, UP};
 use crate::dungeon_generation::room::{Collision, Corridor, IShape, Rectangle, Room};
 use bevy::prelude::IVec2;
-use rand::prelude::ThreadRng;
 use rand::Rng;
 use std::cell::RefCell;
 use std::rc::Rc;
-
-pub struct DungeonState {
-    pub layout: DungeonLayout,
-    pub spawns: Vec<Spawn>,
-    pub(crate) rng: Rc<RefCell<ThreadRng>>,
-}
-
-#[derive(Clone, Debug)]
-pub struct DungeonLayout {
-    pub rooms: Vec<Room>,
-    pub corridors: Vec<Corridor>,
-}
 
 pub struct DungeonGenerator {
     steps: Vec<BoxedStep<DungeonState>>,
@@ -135,14 +123,7 @@ pub fn add_room(state: &DungeonState) -> Result<DungeonState, String> {
     if disjoint_rooms && disjoint_from_corridors {
         rooms.push(room);
 
-        return Ok(DungeonState {
-            layout: DungeonLayout {
-                rooms,
-                corridors: state.layout.corridors.clone(),
-            },
-            spawns: state.spawns.clone(),
-            rng: Rc::clone(&state.rng),
-        });
+        return Ok(DungeonStateBuilder::from_state(state).rooms(rooms).build());
     }
 
     Err("Failed to add room".to_string())
@@ -199,14 +180,10 @@ pub fn add_corridor(state: &DungeonState) -> Result<DungeonState, String> {
 
     if disjoint_from_corridors && disjoint_from_rooms {
         corridors.push(corridor);
-        return Ok(DungeonState {
-            layout: DungeonLayout {
-                rooms: state.layout.rooms.clone(),
-                corridors,
-            },
-            spawns: state.spawns.clone(),
-            rng: Rc::clone(&state.rng),
-        });
+
+        return Ok(DungeonStateBuilder::from_state(state)
+            .corridors(corridors)
+            .build());
     }
 
     Err("Failed to add corridor".to_string())

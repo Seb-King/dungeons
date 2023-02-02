@@ -1,5 +1,6 @@
+use crate::dungeon_generation::dungeon_generator::Spawn;
 use crate::dungeon_generation::dungeon_generator::SpawnType::Player;
-use crate::dungeon_generation::dungeon_generator::{DungeonLayout, DungeonState, Spawn};
+use crate::dungeon_generation::dungeon_state::{DungeonLayout, DungeonState};
 use bevy::math::IVec2;
 use rand::Rng;
 use std::rc::Rc;

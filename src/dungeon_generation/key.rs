@@ -1,4 +1,5 @@
-use crate::dungeon_generation::dungeon_generator::{DungeonLayout, DungeonState, Spawn, SpawnType};
+use crate::dungeon_generation::dungeon_generator::{Spawn, SpawnType};
+use crate::dungeon_generation::dungeon_state::{DungeonLayout, DungeonState};
 use bevy::prelude::{Component, IVec2};
 use rand::Rng;
 use std::rc::Rc;
